@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AP_Motors_Class.h"
+// #include "AP_MotorsMatrix.h"        // Added this JV
 
 #ifndef AP_MOTORS_DENSITY_COMP
 #define AP_MOTORS_DENSITY_COMP 1
@@ -24,7 +25,7 @@
 #define AP_MOTORS_BATT_VOLT_FILT_HZ     0.5f    // battery voltage filtered at 0.5hz
 #define AP_MOTORS_SLEW_TIME_DEFAULT     0.0f    // slew rate limit for thrust output
 #define AP_MOTORS_SAFE_TIME_DEFAULT     1.0f    // Time for the esc when transitioning between zero pwm to minimum
-
+// #define MATRIX_CLASS AP_MotorsMatrix            // Added this. Comment out JV
 // spool definition
 #define AP_MOTORS_SPOOL_UP_TIME_DEFAULT 0.5f    // time (in seconds) for throttle to increase from zero to min throttle, and min throttle to full throttle.
 
@@ -37,6 +38,9 @@ public:
 
     // output - sends commands to the motors
     virtual void        output() override;
+
+    // output - sends commands to the motors PCS "copied" from output() JV
+    void                output_pcs();
 
     // output_min - sends minimum values out to the motors
     void                output_min() override;
@@ -144,6 +148,9 @@ protected:
     // output roll/pitch/yaw/thrust
     virtual void        output_rpyt(void);
 
+    // output lateral/forward/yaw. Added this JV
+    virtual void        output_lfy_pcs(void);
+
     // save parameters as part of disarming
     void                save_params_on_disarm() override;
 
@@ -204,4 +211,7 @@ protected:
 
     // array of motor output values
     float _actuator[AP_MOTORS_MAX_NUM_MOTORS];
+
+/* private:        // Added this section JV
+    MATRIX_CLASS *matrixpcs */
 };

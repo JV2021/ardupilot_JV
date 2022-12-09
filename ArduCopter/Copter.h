@@ -83,6 +83,7 @@
  #define MOTOR_CLASS AP_MotorsHeli
 #else
  #define MOTOR_CLASS AP_MotorsMulticopter
+// #define MATRIX_CLASS AP_MotorsMatrix           // Added this JV
 #endif
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
@@ -410,6 +411,7 @@ private:
 
     // Motor Output
     MOTOR_CLASS *motors;
+    // MATRIX_CLASS *matrixpcs;            // Added this JV
     const struct AP_Param::GroupInfo *motors_var_info;
 
     int32_t _home_bearing;

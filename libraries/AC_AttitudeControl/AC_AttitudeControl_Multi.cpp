@@ -1,6 +1,7 @@
 #include "AC_AttitudeControl_Multi.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
+// #include <GCS_MAVLink/GCS.h>            // Added this to debug JV
 
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
@@ -348,6 +349,35 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     _actuator_sysid.zero();
 
     control_monitor_update();
+}
+
+// Get pilot input and and apply limit in the range -1~1. JV
+void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forward_temp, float yaw_rate_temp)
+{
+    float target_lateral = lateral_temp;
+    float target_forward = forward_temp;
+    float target_yaw_rate = yaw_rate_temp;
+
+    if ((target_lateral < -1.000f) || (target_lateral > 1.000f)){
+        target_lateral = 0.0f;
+    } else if ((target_forward < -1.000f) || (target_forward > 1.000f)){
+        target_forward = 0.0f;
+    } else if ((target_yaw_rate < -1.000f) || (target_yaw_rate > 1.000f)){
+        target_yaw_rate = 0.0f;
+    }
+
+    _motors.set_lateral(target_lateral);          // Set lateral. To be used in output()
+    _motors.set_forward(target_forward);          // Set forward
+    _motors.set_yaw(target_yaw_rate);           // Set yaw_rate
+    //    _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);          // Useful later JV
+    /* static uint8_t counter = 0;         // Use to debug JV
+    counter++;
+    if (counter > 50) {
+        counter = 0;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "lateral= %5.3f", (float)_motors.get_lateral());
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "forward= %5.3f", (float)_motors.get_forward());
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)_motors.get_yaw());
+    } */
 }
 
 // sanity check parameters.  should be called once before takeoff

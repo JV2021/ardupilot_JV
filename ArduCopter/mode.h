@@ -12,7 +12,7 @@ public:
 
     // Auto Pilot Modes enumeration
     enum class Number : uint8_t {
-        STABILIZE =     0,  // manual airframe angle with manual throttle
+        STABILIZE =     0,  // manual airframe angle with manual throttle. Will eventually be PCS_STABLIZE
         ACRO =          1,  // manual body-frame angular rate with manual throttle
         ALT_HOLD =      2,  // manual airframe angle with automatic throttle
         AUTO =          3,  // fully automatic waypoint control using mission commands
@@ -88,6 +88,7 @@ public:
 
     // pilot input processing
     void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
+    void get_pilot_desired_planar_movement(float &lateral, float &forward, float &yaw_rate) const; // Added this JV
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_throttle() const;
 
@@ -1331,22 +1332,24 @@ private:
 };
 
 
-class ModeStabilize : public Mode {
+class ModeStabilize : public Mode { // Start modif JV
 
 public:
     // inherit constructor
     using Mode::Mode;
     Number mode_number() const override { return Number::STABILIZE; }
 
+    // bool init(bool ignore_checks) override;           // Line added, might be useful at some point JV
     virtual void run() override;
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return true; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
-    bool is_autopilot() const override { return false; }
-    bool allows_save_trim() const override { return true; }
-    bool allows_autotune() const override { return true; }
-    bool allows_flip() const override { return true; }
+    bool is_autopilot() const override { return false; }            // Might have to change it to true when auto yaw control
+    bool allows_save_trim() const override { return false; }        // Change to false JV
+    bool allows_autotune() const override { return false; }          // Change to false JV          
+    bool allows_flip() const override { return false; }         // Change to false JV
+    // bool logs_attitude() const override { return true; }         // Might be useful, see complementary code in next class private: JV
 
 protected:
 
@@ -1355,7 +1358,8 @@ protected:
 
 private:
 
-};
+}; // End modif JV
+
 
 #if FRAME_CONFIG == HELI_FRAME
 class ModeStabilize_Heli : public ModeStabilize {

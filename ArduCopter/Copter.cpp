@@ -225,10 +225,7 @@ void Copter::fast_loop()
     ins.update();
 
     // run low level rate controllers that only require IMU data
-    attitude_control->rate_controller_run();
-
-    // send outputs to the motors library immediately
-    motors_output();
+    // attitude_control->rate_controller_run();     // Comment out/incomplete JV
 
     // run EKF state estimator (expensive)
     // --------------------
@@ -251,11 +248,14 @@ void Copter::fast_loop()
     // run the attitude controllers
     update_flight_mode();
 
+    // send outputs to the motors library immediately. Was originally under rate_controller_run(); JV
+    motors_output();
+
     // update home from EKF if necessary
     update_home_from_EKF();
 
     // check if we've landed or crashed
-    update_land_and_crash_detectors();
+    // update_land_and_crash_detectors();       // Comment out JV
 
 #if HAL_MOUNT_ENABLED
     // camera mount's fast update

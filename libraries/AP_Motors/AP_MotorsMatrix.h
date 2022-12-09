@@ -51,7 +51,7 @@ public:
     // output_test_seq - spin a motor at the pwm value specified
     //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
     //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
-    virtual void        output_test_seq(uint8_t motor_seq, int16_t pwm) override;
+    virtual void        output_test_seq(uint8_t motor_seq, int16_t pwm) override;           // PWM min BR2212 & Prop1045: 1100 JV
 
     // output_test_num - spin a motor connected to the specified output channel
     //  (should only be performed during testing)
@@ -62,6 +62,9 @@ public:
 
     // output_to_motors - sends minimum values out to the motors
     void                output_to_motors() override;
+
+    // output_to_motors_pcs - output to the motors PCS version JV
+    // void                output_to_motors_pcs();      Comment out JV
 
     // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
     //  this can be used to ensure other pwm outputs (i.e. for servos) do not conflict
@@ -84,6 +87,15 @@ public:
     // add_motor using raw roll, pitch, throttle and yaw factors
     void                add_motor_raw(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, uint8_t testing_order, float throttle_factor = 1.0f);
 
+    // add_motor using raw lateral (right positive), forward (front positive?) and yaw factors (what to I do with you?) JV
+    void                add_motor_raw_pcs(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_facpcs, uint8_t testing_order, float throttle_factor, float lateral_fac, float forward_fac);
+
+    // Added these get functions for the PCS JV
+    // uint8_t             get_test_order() const { return _test_order[AP_MOTORS_MAX_NUM_MOTORS]; }
+    float               get_lateral_factor(uint8_t i) override { return _lateral_factor[i]; }
+    float               get_forward_factor(uint8_t i) override { return _forward_factor[i]; }
+    // float               get_thrust_lfy_out() const { return _thrust_lfy_out[AP_MOTORS_MAX_NUM_MOTORS]; } // Comment out JV
+    float               get_yaw_factorpcs(uint8_t i) override { return _yaw_factorpcs[i]; }
 protected:
     // output - sends commands to the motors
     void                output_armed_stabilizing() override;
@@ -115,6 +127,10 @@ protected:
     float               _throttle_factor[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to throttle 0~1
     float               _thrust_rpyt_out[AP_MOTORS_MAX_NUM_MOTORS]; // combined roll, pitch, yaw and throttle outputs to motors in 0~1 range
     uint8_t             _test_order[AP_MOTORS_MAX_NUM_MOTORS];  // order of the motors in the test sequence
+    float               _lateral_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to lateral (right positive). Added this JV
+    float               _forward_factor[AP_MOTORS_MAX_NUM_MOTORS]; // each motors contribution to forward (front positive). Added this JV
+    // float               _thrust_lfy_out[AP_MOTORS_MAX_NUM_MOTORS]; // combined lateral, forward and yaw outputs to motors in 0~1 range. Added this Comment out JV
+    float               _yaw_factorpcs[AP_MOTORS_MAX_NUM_MOTORS];  // each motors contribution to yaw (normally 1 or -1)
 
     // motor failure handling
     float               _thrust_rpyt_out_filt[AP_MOTORS_MAX_NUM_MOTORS];    // filtered thrust outputs with 1 second time constant

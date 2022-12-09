@@ -1,64 +1,36 @@
 #include "Copter.h"
+// #include <GCS_MAVLink/GCS.h>            // Added this to debug JV
 
-/*
- * Init and run calls for stabilize flight mode
- */
+// Init and run calls for stabilize flight mode. Added this init JV 
 
 // stabilize_run - runs the main stabilize controller
 // should be called at 100hz or more
 void ModeStabilize::run()
-{
-    // apply simple mode transform to pilot inputs
-    update_simple_mode();
-
-    // convert pilot input to lean angles
-    float target_roll, target_pitch;
-    get_pilot_desired_lean_angles(target_roll, target_pitch, copter.aparm.angle_max, copter.aparm.angle_max);
-
-    // get pilot's desired yaw rate
-    float target_yaw_rate = get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+{    
+    // Get pilot PWM inputs (from roll/pitch to forward/lateral) thrust JV
+    float target_lateral, target_forward;
+    
+    // get pilot's desired yaw rate. Set to zero at first. When piloting we want a yaw rate instead of an angle JV
+    float target_yaw_rate = 0.0f; // get_pilot_desired_yaw_rate(channel_yaw->get_control_in()); 
 
     if (!motors->armed()) {
         // Motors should be Stopped
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-    } else if (copter.ap.throttle_zero) {
-        // Attempting to Land
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
+        target_lateral = 0.0f;
+        target_forward = 0.0f;
+        target_yaw_rate = 0.0f;
     } else {
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        get_pilot_desired_planar_movement(target_lateral, target_forward, target_yaw_rate);      // (PWM) JV
     }
 
-    switch (motors->get_spool_state()) {
-    case AP_Motors::SpoolState::SHUT_DOWN:
-        // Motors Stopped
-        attitude_control->reset_yaw_target_and_rate();
-        attitude_control->reset_rate_controller_I_terms();
-        break;
+/* static uint8_t counter = 0;         // Use to debug
+counter++;
+if (counter > 50) {
+    counter = 0;
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "lateral= %5.3f", (float)target_lateral);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "forward= %5.3f", (float)target_forward);
+    gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)target_yaw_rate);
+} */
 
-    case AP_Motors::SpoolState::GROUND_IDLE:
-        // Landed
-        attitude_control->reset_yaw_target_and_rate();
-        attitude_control->reset_rate_controller_I_terms_smoothly();
-        break;
-
-    case AP_Motors::SpoolState::THROTTLE_UNLIMITED:
-        // clear landing flag above zero throttle
-        if (!motors->limit.throttle_lower) {
-            set_land_complete(false);
-        }
-        break;
-
-    case AP_Motors::SpoolState::SPOOLING_UP:
-    case AP_Motors::SpoolState::SPOOLING_DOWN:
-        // do nothing
-        break;
-    }
-
-    // call attitude controller
-    attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw(target_roll, target_pitch, target_yaw_rate);
-
-    // output pilot's throttle
-    attitude_control->set_throttle_out(get_pilot_desired_throttle(),
-                                       true,
-                                       g.throttle_filt);
+    // call attitude controller. Will need to call my controller JV
+    attitude_control->pcs_manual_bypass(target_lateral, target_forward, target_yaw_rate);        // Need to add yaw JV
 }

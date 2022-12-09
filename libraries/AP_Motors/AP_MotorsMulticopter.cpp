@@ -16,6 +16,7 @@
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
+#include <GCS_MAVLink/GCS.h>            // Added this to debug JV
 
 extern const AP_HAL::HAL& hal;
 
@@ -226,9 +227,9 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
     _throttle_radio_max = 1900;
 };
 
-// output - sends commands to the motors
+// output - sends commands to the motors. Comment out everything JV
 void AP_MotorsMulticopter::output()
-{
+{ /*
     // update throttle filter
     update_throttle_filter();
 
@@ -251,7 +252,57 @@ void AP_MotorsMulticopter::output()
     output_boost_throttle();
 
     // output raw roll/pitch/yaw/thrust
-    output_rpyt();
+    output_rpyt(); */
+};
+
+void AP_MotorsMulticopter::output_pcs()
+{
+    uint8_t i;                          // general purpose counter
+    float   lateral_thrust;             // lateral thrust input value, +/- 1.0 (right is positive) JV
+    float   forward_thrust;             // forward thrust input value, +/- 1.0  (forward is positive) JV
+    float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
+   
+    lateral_thrust = _lateral_in;           // Range +/-1.0 Added this JV
+    forward_thrust = _forward_in;           // Range +/-1.0 Added this JV
+    yaw_thrust = _yaw_in;           // Range +/-1.0 Added this JV
+
+    static uint8_t counter = 0;         // Use to debug JV
+    counter++;
+    if (counter > 50) {
+        counter = 0;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "lateral= %5.3f", (float)lateral_thrust);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "forward= %5.3f", (float)forward_thrust);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)yaw_thrust);
+    }
+
+    float _thrust_lfy_outAP[AP_MOTORS_MAX_NUM_MOTORS];       // Motor command range 0.0 ~ 1.0 JV
+    float lateral_factorAP[AP_MOTORS_MAX_NUM_MOTORS];
+    float forward_factorAP[AP_MOTORS_MAX_NUM_MOTORS];
+    float yaw_factorAP[AP_MOTORS_MAX_NUM_MOTORS];
+    
+    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        lateral_factorAP[i] = get_lateral_factor(i);
+        forward_factorAP[i] = get_forward_factor(i);
+        yaw_factorAP[i] = get_yaw_factorpcs(i);
+
+        if ((motor_enabled[i]) && (((lateral_thrust * lateral_factorAP[i]) > 0.0f) || ((forward_thrust * forward_factorAP[i]) > 0.0f) || ((yaw_thrust * yaw_factorAP[i]) > 0.0f) )) {     // Added the second condition JV
+            // calculate the thrust outputs for lateral, forward and yaw
+            _thrust_lfy_outAP[i] = (lateral_thrust * lateral_factorAP[i] + forward_thrust * forward_factorAP[i] + yaw_thrust * yaw_factorAP[i]);      // Range 0~1 Added this JV
+            // I may need to add an upper limit to 1.0f to _thrust_rpyt_out for safety JV
+            // record lowest roll + pitch command
+            } else {
+                _thrust_lfy_outAP[i] = 0.0f;
+            }
+    }
+
+    uint8_t j;
+    // Convert output int the range 0~1 to PWM and send to each motor. It is separate from the other loop to avoid 
+    // the calculation time. Therefore, the commands are written with a really small delay JV
+    for (j = 0; j < AP_MOTORS_MAX_NUM_MOTORS; j++) {
+        if (motor_enabled[j]) {
+            rc_write(j, output_to_pwm(_thrust_lfy_outAP[j]));
+        }
+    }
 };
 
 // output booster throttle, if any
@@ -273,6 +324,14 @@ void AP_MotorsMulticopter::output_rpyt(void)
     SRV_Channels::set_output_scaled(SRV_Channel::k_yaw_out, _yaw_in_ff * 4500);
     SRV_Channels::set_output_scaled(SRV_Channel::k_thrust_out, get_throttle() * 1000);
 }
+
+// output lateral/forward/yaw. Added this JV 
+void AP_MotorsMulticopter::output_lfy_pcs(void)
+{ /*
+    SRV_Channels::set_output_scaled(SRV_Channel::k_roll_out, 0.000f * 4500);       // k_roll_out is the channel ID so keep the name JV
+    SRV_Channels::set_output_scaled(SRV_Channel::k_pitch_out, 0.000f * 4500);       // I have no feed-forward for now JV
+    SRV_Channels::set_output_scaled(SRV_Channel::k_yaw_out, 0.000f * 4500); */
+} 
 
 // sends minimum values out to the motors
 void AP_MotorsMulticopter::output_min()
@@ -397,18 +456,14 @@ float AP_MotorsMulticopter::get_compensation_gain() const
     return ret;
 }
 
-// convert actuator output (0~1) range to pwm range
+// convert actuator output (0~1) range to pwm range. Modified JV
 int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
 {
     float pwm_output;
-    if (_spool_state == SpoolState::SHUT_DOWN) {
-        // in shutdown mode, use PWM 0 or minimum PWM
-        if (_disarm_disable_pwm && !armed()) {
-            pwm_output = 0;
-        } else {
-            pwm_output = get_pwm_output_min();
+    if (!armed()) {
+        pwm_output = get_pwm_output_min();
         }
-    } else {
+    else {
         // in all other spool modes, covert to desired PWM
         pwm_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * actuator;
     }
@@ -559,7 +614,7 @@ void AP_MotorsMulticopter::output_logic()
         // Motors should be stationary.
         // Servos set to their trim values or in a test condition.
 
-        // set limits flags
+        // set limits flags         // Will need to add my limits JV
         limit.roll = true;
         limit.pitch = true;
         limit.yaw = true;
@@ -585,7 +640,7 @@ void AP_MotorsMulticopter::output_logic()
         // Motors should be stationary or at ground idle.
         // Servos should be moving to correct the current attitude.
 
-        // set limits flags
+        // set limits flags         // Will need to add my limits JV
         limit.roll = true;
         limit.pitch = true;
         limit.yaw = true;
@@ -632,7 +687,7 @@ void AP_MotorsMulticopter::output_logic()
         // Maximum throttle should move from minimum to maximum.
         // Servos should exhibit normal flight behavior.
 
-        // initialize limits flags
+        // initialize limits flags         // Will need to add my limits JV
         limit.roll = false;
         limit.pitch = false;
         limit.yaw = false;
@@ -666,7 +721,7 @@ void AP_MotorsMulticopter::output_logic()
         // Throttle should exhibit normal flight behavior.
         // Servos should exhibit normal flight behavior.
 
-        // initialize limits flags
+        // initialize limits flags         // Will need to add my limits JV
         limit.roll = false;
         limit.pitch = false;
         limit.yaw = false;
@@ -694,7 +749,7 @@ void AP_MotorsMulticopter::output_logic()
         // Maximum throttle should move from maximum to minimum.
         // Servos should exhibit normal flight behavior.
 
-        // initialize limits flags
+        // initialize limits flags         // Will need to add my limits JV
         limit.roll = false;
         limit.pitch = false;
         limit.yaw = false;
