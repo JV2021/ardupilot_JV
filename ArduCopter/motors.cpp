@@ -179,7 +179,12 @@ void Copter::motors_output()
     } */
     motors->output_pcs();       // Modif JV
     // push all channels
-    SRV_Channels::push();
+    if (!motors->armed())
+    {
+        SRV_Channels::zero_rc_outputs();
+    } else {
+        SRV_Channels::push();
+    }
 }
 
 // check for pilot stick input to trigger lost vehicle alarm

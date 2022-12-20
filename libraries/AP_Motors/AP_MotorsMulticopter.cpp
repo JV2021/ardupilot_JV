@@ -285,11 +285,14 @@ void AP_MotorsMulticopter::output_pcs()
         forward_factorAP[i] = get_forward_factor(i);
         yaw_factorAP[i] = get_yaw_factorpcs(i);
 
-        if ((motor_enabled[i]) && (((lateral_thrust * lateral_factorAP[i]) > 0.0f) || ((forward_thrust * forward_factorAP[i]) > 0.0f) || ((yaw_thrust * yaw_factorAP[i]) > 0.0f) )) {     // Added the second condition JV
+        if ((motor_enabled[i]) && (((lateral_thrust * lateral_factorAP[i]) > 0.0f) || ((forward_thrust * forward_factorAP[i]) > 0.0f) || ((yaw_thrust * yaw_thrust * yaw_factorAP[i]) <= 1.0f) )) {     // Added the second condition JV
             // calculate the thrust outputs for lateral, forward and yaw
-            _thrust_lfy_outAP[i] = (lateral_thrust * lateral_factorAP[i] + forward_thrust * forward_factorAP[i] + yaw_thrust * yaw_factorAP[i]);      // Range 0~1 Added this JV
+            _thrust_lfy_outAP[i] = (lateral_thrust * lateral_factorAP[i] + forward_thrust * forward_factorAP[i] + (yaw_thrust / 2.0f + 0.5f ) * yaw_factorAP[i]);      // Range 0~1. yaw_factorAP must be positive. Added this JV
             // I may need to add an upper limit to 1.0f to _thrust_rpyt_out for safety JV
             // record lowest roll + pitch command
+            } else if (yaw_factorAP[i])     // Caution! Yaw factor must be 0 or 1 JV
+            {
+                _thrust_lfy_outAP[i] = 0.5f;
             } else {
                 _thrust_lfy_outAP[i] = 0.0f;
             }

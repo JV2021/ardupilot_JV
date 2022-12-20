@@ -363,7 +363,7 @@ void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forwa
     } else if ((target_forward < -1.000f) || (target_forward > 1.000f)){
         target_forward = 0.0f;
     } else if ((target_yaw_rate < -1.000f) || (target_yaw_rate > 1.000f)){
-        target_yaw_rate = 0.0f;
+        target_yaw_rate = 0.5f;     // Change to 0.5f because it is 0 yaw JV
     }
 
     _motors.set_lateral(target_lateral);          // Set lateral. To be used in output()

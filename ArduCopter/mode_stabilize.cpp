@@ -11,13 +11,13 @@ void ModeStabilize::run()
     float target_lateral, target_forward;
     
     // get pilot's desired yaw rate. Set to zero at first. When piloting we want a yaw rate instead of an angle JV
-    float target_yaw_rate = 0.0f; // get_pilot_desired_yaw_rate(channel_yaw->get_control_in()); 
+    float target_yaw_rate = 0.5f; // Change to 0.5f to avoid max reverse for an instant JV
 
     if (!motors->armed()) {
         // Motors should be Stopped
         target_lateral = 0.0f;
         target_forward = 0.0f;
-        target_yaw_rate = 0.0f;
+        target_yaw_rate = 0.5f;     // 0.5f means 0 yaw rate. See also AP_MotorsMulticopter.cpp JV
     } else {
         get_pilot_desired_planar_movement(target_lateral, target_forward, target_yaw_rate);      // (PWM) JV
     }
@@ -32,5 +32,5 @@ if (counter > 50) {
 } */
 
     // call attitude controller. Will need to call my controller JV
-    attitude_control->pcs_manual_bypass(target_lateral, target_forward, target_yaw_rate);        // Need to add yaw JV
+    attitude_control->pcs_manual_bypass(target_lateral, target_forward, target_yaw_rate);
 }
