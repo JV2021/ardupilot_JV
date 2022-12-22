@@ -379,6 +379,23 @@ void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forwa
         gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)_motors.get_yaw());
     } */
 }
+/*
+void AC_AttitudeControl_Multi::pcs_auto_yaw(bool enabled_auto_yaw)
+{
+
+    float target_yaw_rate = yaw_rate_temp;
+
+    // Read heading and determine 
+    
+    _motors.set_yaw(target_yaw_rate);           // Set yaw_rate
+    //    _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);          // Useful later JV
+     static uint8_t counter = 0;         // Use to debug JV
+    counter++;
+    if (counter > 50) {
+        counter = 0;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)_motors.get_yaw());
+    } 
+} */
 
 // sanity check parameters.  should be called once before takeoff
 void AC_AttitudeControl_Multi::parameter_sanity_check()
