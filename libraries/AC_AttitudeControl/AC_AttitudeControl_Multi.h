@@ -75,8 +75,11 @@ public:
     // run lowest level body-frame rate controller and send outputs to the motors
     void rate_controller_run() override;
 
-    // run pcs bypass and send outputs to the motors
+    // run pcs bypass and send outputs to the motors. Added this JV
     void pcs_manual_bypass(float lateral_temp, float forward_temp, float yaw_rate_temp);
+
+    // run pcs auto yaw controller. Added this JV
+    void pcs_auto_yaw(bool enabled_auto_yaw, float yaw_rate_temp2);     // Added the second entry
 
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
@@ -100,4 +103,8 @@ protected:
     AP_Float              _thr_mix_man;     // throttle vs attitude control prioritisation used when using manual throttle (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
+  
+  // PCS new parameters JV
+    AP_Float              _autoyaw_kp;      // Yaw controller proportional gain in sec/rad
+  //  AP_Float              _autoyaw_pt;  // Pilot input proportional gain in rad/sec
 };
