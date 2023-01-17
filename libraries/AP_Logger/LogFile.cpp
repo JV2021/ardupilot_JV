@@ -409,6 +409,18 @@ void AP_Logger::Write_PID(uint8_t msg_type, const PID_Info &info)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+void AP_Logger::Write_PCS(uint8_t msg_type, const PCS_Info &infopcs)
+{
+    const struct log_PCS pkt{
+        LOG_PACKET_HEADER_INIT(msg_type),
+        time_us              : AP_HAL::micros64(),
+        pcs_tar_lat          : infopcs.pcs_tar_lat,
+        pcs_tar_fwd          : infopcs.pcs_tar_fwd,
+        pcs_tar_yaw          : infopcs.pcs_tar_yaw,
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 void AP_Logger::Write_RPM(const AP_RPM &rpm_sensor)
 {
     float rpm1 = -1, rpm2 = -1;

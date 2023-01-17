@@ -371,6 +371,15 @@ struct PACKED log_PID {
     uint8_t limit;
 };
 
+// Logging JV
+struct PACKED log_PCS {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float   pcs_tar_lat;
+    float   pcs_tar_fwd;
+    float   pcs_tar_yaw;
+};
+
 struct PACKED log_WheelEncoder {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -730,6 +739,12 @@ struct PACKED log_PSCD {
 #define PID_FMT    "QfffffffffB"
 #define PID_UNITS  "s----------"
 #define PID_MULTS  "F----------"
+
+// Logging JV
+#define PCS_LABELS "TimeUS,Tar_lat,Tar_fwd,Tar_yaw"
+#define PCS_FMT    "Qfff"
+#define PCS_UNITS  "s---"
+#define PCS_MULTS  "F---"
 
 // @LoggerMessage: ADSB
 // @Description: Automatic Dependant Serveillance - Broadcast detected vehicle information
@@ -1292,6 +1307,8 @@ LOG_STRUCTURE_FROM_ESC_TELEM \
       "PIDP", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_PIDY_MSG, sizeof(log_PID), \
       "PIDY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
+    { LOG_PCSCMD_MSG, sizeof(log_PCS), \
+      "PCSC", PCS_FMT,  PCS_LABELS, PCS_UNITS, PCS_MULTS }, \
     { LOG_PIDA_MSG, sizeof(log_PID), \
       "PIDA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS }, \
     { LOG_PIDS_MSG, sizeof(log_PID), \
@@ -1451,6 +1468,7 @@ enum LogMessages : uint8_t {
     LOG_PSCD_MSG,
     LOG_RAW_PROXIMITY_MSG,
     LOG_IDS_FROM_PRECLAND,
+    LOG_PCSCMD_MSG,     // Logging JV
 
     _LOG_LAST_MSG_
 };

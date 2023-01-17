@@ -373,6 +373,10 @@ void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forwa
         target_yaw_rate = 0.0f;     // Change to 0.5f because it is 0 yaw JV
     }
 
+    // Logging JV
+    _pcscmd.pcs_tar_lat = target_lateral;
+    _pcscmd.pcs_tar_fwd = target_forward;
+
     _motors.set_lateral(target_lateral);          // Set lateral. To be used in output()
     _motors.set_forward(target_forward);          // Set forward
     // _motors.set_yaw(target_yaw_rate);           // Now pcs_auto_yaw JV
@@ -409,6 +413,9 @@ void AC_AttitudeControl_Multi::pcs_auto_yaw(bool enabled_auto_yaw, float yaw_rat
     {
         cmd_yaw = 0.0f;
     }
+
+    _pcscmd.pcs_tar_yaw = cmd_yaw;          // Logging JV
+    
     _motors.set_yaw(cmd_yaw);           // Set yaw command
     
     /* static uint8_t counter = 0;         // Use to debug JV

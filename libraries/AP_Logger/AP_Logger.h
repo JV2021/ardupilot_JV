@@ -345,6 +345,14 @@ public:
         bool  limit;
     };
 
+    struct PCS_Info {         // Logging JV
+        float pcs_tar_lat;
+        float pcs_tar_fwd;
+        float pcs_tar_yaw;
+    };
+
+    void Write_PCS(uint8_t msg_type, const PCS_Info &infopcs);       // Logging JV
+
     void Write_PID(uint8_t msg_type, const PID_Info &info);
 
     // returns true if logging of a message should be attempted
