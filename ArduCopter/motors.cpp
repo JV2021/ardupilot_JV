@@ -160,7 +160,6 @@ void Copter::motors_output()
 
     // update output on any aux channels, for manual passthru
     // SRV_Channels::output_ch_all();           // Comment out JV
-
     /* Comment out JV // check if we are performing the motor test
     if (ap.motor_test) {
         motor_test_output();

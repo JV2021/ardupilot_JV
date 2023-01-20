@@ -16,7 +16,7 @@
 #include "AP_MotorsMulticopter.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
-#include <GCS_MAVLink/GCS.h>            // Added this to debug JV
+// #include <GCS_MAVLink/GCS.h>            // Added this to debug JV
 
 extern const AP_HAL::HAL& hal;
 
@@ -266,14 +266,14 @@ void AP_MotorsMulticopter::output_pcs()
     forward_thrust = _forward_in;           // Range +/-1.0 Added this JV
     yaw_thrust = _yaw_in;           // Range +/-1.0 Added this JV
 
-    static uint8_t counter = 0;         // Use to debug JV
+    /* static uint8_t counter = 0;         // Use to debug JV
     counter++;
     if (counter > 50) {
         counter = 0;
         gcs().send_text(MAV_SEVERITY_CRITICAL, "lateral= %5.3f", (float)lateral_thrust);
         gcs().send_text(MAV_SEVERITY_CRITICAL, "forward= %5.3f", (float)forward_thrust);
         gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)yaw_thrust);
-    }
+    } */
 
     float _thrust_lfy_outAP[AP_MOTORS_MAX_NUM_MOTORS];       // Motor command range 0.0 ~ 1.0 JV
     float lateral_factorAP[AP_MOTORS_MAX_NUM_MOTORS];

@@ -56,8 +56,17 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO_FRAME("LATERAL",    5, RCMapper, _ch_lateral, 7, AP_PARAM_FRAME_SUB),
 
+    // @Param: KSW
+    // @DisplayName: Killswitch channel
+    // @Description: Killswitch channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Reboot is required for changes to take effect.
+    // @Range: 1 12
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("KSW",         6, RCMapper, _ch_ksw, 8),
+
     AP_GROUPEND
-};
+};          // Killswitch JV
 
 // singleton instance
 RCMapper *RCMapper::_singleton;

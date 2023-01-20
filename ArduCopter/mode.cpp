@@ -22,8 +22,9 @@ Mode::Mode(void) :
     channel_pitch(copter.channel_pitch),
     channel_throttle(copter.channel_throttle),
     channel_yaw(copter.channel_yaw),
-    G_Dt(copter.G_Dt)
-{ };
+    G_Dt(copter.G_Dt),
+    channel_killswitch(copter.channel_killswitch)
+{ };            // Killswitch JV
 
 // return the static controller object corresponding to supplied mode
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)
@@ -418,6 +419,21 @@ void Mode::get_pilot_desired_planar_movement(float &lateral, float &forward, flo
     forward = (channel_pitch->get_control_in()) / 4500.0f;           // -1.0 ~ +1.0
     yaw_rate = (channel_yaw->get_control_in()) / 4500.0f;           // -1.0 ~ +1.0
     // lateral and forward are returned.
+}
+
+// Killswitch JV
+bool Mode::pcs_killswitch() const
+{
+    float killswitch;
+    killswitch = channel_killswitch->get_control_in();
+
+    if (killswitch >= 1200.0f )
+    {
+        return true;
+    } else
+    {
+        return false;
+    }
 }
 
 bool Mode::_TakeOff::triggered(const float target_climb_rate) const

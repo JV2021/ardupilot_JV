@@ -503,6 +503,7 @@ void Copter::allocate_motors(void)
     }
 
     const struct AP_Param::GroupInfo *ac_var_info;
+    // const struct AP_Param::GroupInfo *ac_var_info_pcs;          // Param JV
 
 #if FRAME_CONFIG != HELI_FRAME
     if ((AP_Motors::motor_frame_class)g2.frame_class.get() == AP_Motors::MOTOR_FRAME_6DOF_SCRIPTING) {
@@ -513,6 +514,7 @@ void Copter::allocate_motors(void)
     } else {
         attitude_control = new AC_AttitudeControl_Multi(*ahrs_view, aparm, *motors, scheduler.get_loop_period_s());
         ac_var_info = AC_AttitudeControl_Multi::var_info;
+        // ac_var_info_pcs = AC_AttitudeControl_Multi::var_infopcs;            // Param JV
     }
 #else
     attitude_control = new AC_AttitudeControl_Heli(*ahrs_view, aparm, *motors, scheduler.get_loop_period_s());
@@ -522,6 +524,7 @@ void Copter::allocate_motors(void)
         AP_BoardConfig::config_error("Unable to allocate AttitudeControl");
     }
     AP_Param::load_object_from_eeprom(attitude_control, ac_var_info);
+    // AP_Param::load_object_from_eeprom(attitude_control, ac_var_info_pcs);           // Param JV
         
     pos_control = new AC_PosControl(*ahrs_view, inertial_nav, *motors, *attitude_control, scheduler.get_loop_period_s());
     if (pos_control == nullptr) {
