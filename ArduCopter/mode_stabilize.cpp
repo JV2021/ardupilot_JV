@@ -13,8 +13,9 @@ void ModeStabilize::run()
     // get pilot's desired yaw rate. Set to zero at first. When piloting we want a yaw rate instead of an angle JV
     float target_yaw_rate = 0.0f;
 
-    // pcs_auto_yaw boolean
+    // PCS booleans
     bool auto_yaw_ON = false;
+    bool enabled_pcs_rfc = false;
        
     if (!motors->armed() || pcs_killswitch()) {
         // Motors should be Stopped
@@ -22,9 +23,11 @@ void ModeStabilize::run()
         target_forward = 0.0f;
         target_yaw_rate = 0.0f;     // See AP_MotorsMulticopter.cpp JV
         auto_yaw_ON = false;
+        enabled_pcs_rfc = false;
     } else {
         get_pilot_desired_planar_movement(target_lateral, target_forward, target_yaw_rate);      // (PWM) JV
         auto_yaw_ON = true;
+        enabled_pcs_rfc = true;
     }
 
 /* static uint8_t counter = 0;         // Use to debug
@@ -37,6 +40,7 @@ if (counter > 50) {
 } */
 
     // call attitude controller. Will need to call my controller JV
-    attitude_control->pcs_manual_bypass(target_lateral, target_forward, target_yaw_rate);
+    // attitude_control->pcs_manual_bypass(target_lateral, target_forward, target_yaw_rate);
+    attitude_control->pcs_rf_controller( enabled_pcs_rfc, target_forward, target_lateral);      // forward = latitude (North), lateral = longitude (East)
     attitude_control->pcs_auto_yaw(auto_yaw_ON, target_yaw_rate);
 }

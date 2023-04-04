@@ -6,6 +6,7 @@
 #include "AC_AttitudeControl.h"
 #include <AP_Motors/AP_MotorsMulticopter.h>
 #include <AP_Logger/AP_Logger.h>      // Logging JV
+// #include <AP_InertialNav/AP_InertialNav.h>  // Inertial Navigation library inav JV
 
 // default rate controller PID gains
 #ifndef AC_ATC_MULTI_RATE_RP_P
@@ -43,7 +44,7 @@
 class AC_AttitudeControl_Multi : public AC_AttitudeControl {
 public:
 	AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt);
-
+  // const AP_InertialNav &inav, inav JV
 	// empty destructor to suppress compiler warning
 	virtual ~AC_AttitudeControl_Multi() {}
 
@@ -83,6 +84,11 @@ public:
     // run pcs auto yaw controller. Added this JV
     void pcs_auto_yaw(bool enabled_auto_yaw, float yaw_rate_temp2);     // Added the second entry
 
+    // Converts thrust (N) in body frame to a motor command (-1 to +1). JV
+    float thrust_model_br2212(float thrust_body);      
+
+    void pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude);     // Rotating force controller JV
+
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
 
@@ -110,6 +116,8 @@ protected:
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
   
+    // const AP_InertialNav   *_inav;      // inav JV
+
   // PCS new parameters JV
     AP_Float              _ayaw_kp;      // Yaw controller proportional gain in sec/rad
     AP_Float              _ayaw_plt;  // Pilot input proportional gain in rad/sec (eventually desired heading)
