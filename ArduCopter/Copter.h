@@ -83,7 +83,6 @@
  #define MOTOR_CLASS AP_MotorsHeli
 #else
  #define MOTOR_CLASS AP_MotorsMulticopter
-// #define MATRIX_CLASS AP_MotorsMatrix           // Added this JV
 #endif
 
 #if MODE_AUTOROTATE_ENABLED == ENABLED
@@ -223,6 +222,9 @@ public:
     friend class ModeAutorotate;
 
     Copter(void);
+
+    // Killswitch JV
+    uint32_t get_last_msg_rc() {return last_radio_update_ms; }
 
 private:
 

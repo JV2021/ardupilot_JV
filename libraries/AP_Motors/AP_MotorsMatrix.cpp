@@ -406,7 +406,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 /* Comment out JV
 // output_armed - sends commands to the motors. JV
 // Get commands range -1~1 to individual commands in the range 0~1.
-void AP_MotorsMatrix::output_to_motors_pcs()      // Added parameters JV
+void AP_MotorsMatrix::output_to_motors_pcs()
 {
     uint8_t i;                          // general purpose counter
     // float   roll_thrust;                // roll thrust input value, +/- 1.0

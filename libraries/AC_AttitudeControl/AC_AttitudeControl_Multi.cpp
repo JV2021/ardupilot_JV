@@ -246,12 +246,26 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
 	// @Range: 0.7 4.0
 	// @User: Advanced
 	AP_GROUPINFO("ayaw_plt", 12, AC_AttitudeControl_Multi, _ayaw_plt, AC_ATTITUDE_CONTROL_ayaw_plt_DEFAULT),
+
+    // @Param: rfc_vel_plt
+	// @DisplayName: Rotating force controller pilot input scaler in m/s
+	// @Description: Pilot proportional gain which converts an input -1 to +1 to the desired output range in m/s
+	// @Range: 0.0 4.0
+	// @User: Advanced
+	AP_GROUPINFO("rfc_vel_plt", 13, AC_AttitudeControl_Multi, _rfc_vel_plt, AC_ATTITUDE_CONTROL_rfc_vel_plt_DEFAULT),
+
+    // @Param: rfc_vel_kp
+	// @DisplayName: Rotating force controller velocity kp N*s/m
+	// @Description: Rotating force controller velocity proportional gain in N*s/m
+	// @Range: 4.0 10.0
+	// @User: Advanced
+	AP_GROUPINFO("rfc_vel_kp", 14, AC_AttitudeControl_Multi, _rfc_vel_kp, AC_ATTITUDE_CONTROL_rfc_vel_kp_DEFAULT),
     
     AP_GROUPEND
-};          // PCS new parameters were added at the end JV
+};          // PCS new parameters were added at the end Param JV
 
-AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt) :      // const AP_InertialNav &inav inav JV
-    AC_AttitudeControl(ahrs, aparm, motors, dt),          // _inav(), inav JV
+AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt) :
+    AC_AttitudeControl(ahrs, aparm, motors, dt),
     _motors_multi(motors),
     _pid_rate_roll(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
     _pid_rate_pitch(AC_ATC_MULTI_RATE_RP_P, AC_ATC_MULTI_RATE_RP_I, AC_ATC_MULTI_RATE_RP_D, 0.0f, AC_ATC_MULTI_RATE_RP_IMAX, AC_ATC_MULTI_RATE_RP_FILT_HZ, 0.0f, AC_ATC_MULTI_RATE_RP_FILT_HZ, dt),
@@ -464,10 +478,9 @@ float AC_AttitudeControl_Multi::thrust_model_br2212(float thrust_body)
 void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude)
 {   // TODO: Delete the saturations since the conversion model thrust to (-1 to +1) already does it. JV
     
-    // _inav = new AP_InertialNav();
-    float plt_in_scaler = 2.0f;       // I want pilot input as target in the range -2 ~ +2 m/s
+    // float plt_in_scaler = 2.0f;       // I want pilot input as target in the range -2 ~ +2 m/s
     Vector3f vel_inertial; //_inav->get_velocity();    // Velocity in inertial frame (NED). Latitude, Longitude, Vertical down  (m/s)
-    float kp_vel = 6.0f;            // Proportional gain. (N*s/m)
+    // float kp_vel = 6.0f;            // Proportional gain. (N*s/m)
     float cmd_vel_latitude = 0.0f;          // latitude command
     float cmd_vel_longitude = 0.0f;          // longitude command
     float cmd_lateral;                       // Lateral command
@@ -477,8 +490,8 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     
     if (enabled_rfc) {
         if (_ahrs.get_velocity_NED(vel_inertial)) {
-            cmd_vel_latitude = kp_vel * (plt_latitude * plt_in_scaler - vel_inertial.x);     // Proportional latitude vel controller
-            cmd_vel_longitude = kp_vel * (plt_longitude * plt_in_scaler - vel_inertial.y);     // Proportional longitude vel controller
+            cmd_vel_latitude = _rfc_vel_kp * (plt_latitude * _rfc_vel_plt - vel_inertial.x);     // Proportional latitude vel controller
+            cmd_vel_longitude = _rfc_vel_kp * (plt_longitude * _rfc_vel_plt - vel_inertial.y);     // Proportional longitude vel controller
 
         } else
         {
@@ -490,7 +503,7 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         cmd_body.x = cmd_vel_latitude;                          // (North)
         cmd_body.y = cmd_vel_longitude;                          // (East)
         cmd_body.z = 0.0f;                          // (Down)
-        cmd_body = rot_body_to_NED.mul_transpose(cmd_body);     // NED -> XYZ (longitudinal/transversal/Up?) (Newtons)
+        cmd_body = rot_body_to_NED.mul_transpose(cmd_body);     // NED -> XYZ (forward/right/down) (Newtons)
 
         // conversion from thrust (N) in body frame to -1 to +1 range
         cmd_lateral = thrust_model_br2212(cmd_body.y);

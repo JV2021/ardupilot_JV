@@ -38,6 +38,9 @@ protected:
 
     // return the AFS mapped control mode
     enum control_mode afs_mode(void) override;
+
+    // AFS JV test
+    // bool afs_armed() override;
 };
 
 #endif // ADVANCED_FAILSAFE

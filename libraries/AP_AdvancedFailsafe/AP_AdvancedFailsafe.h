@@ -24,6 +24,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_Mission/AP_Mission.h>
 #include <inttypes.h>
+// #include <AP_Motors/AP_Motors_Class.h>            // Added to access the arm state. AFS JV
 
 
 class AP_AdvancedFailsafe
@@ -39,7 +40,8 @@ public:
         STATE_PREFLIGHT       = 0,
         STATE_AUTO            = 1,
         STATE_DATA_LINK_LOSS  = 2,
-        STATE_GPS_LOSS        = 3
+        STATE_GPS_LOSS        = 3,
+        STATE_STABILIZED      = 4           // Added this state and the comma after STATE_GPS_LOSS = 3 AFS JV
     };
 
     enum terminate_action {
@@ -104,7 +106,11 @@ protected:
     // return the AFS mapped control mode
     virtual enum control_mode afs_mode(void) = 0;
 
+    // AFS JV test
+    // virtual bool afs_armed() { return false; }
+
     enum state _state;
+    // AP_Motors  *afs_motors;           // AFS JV
 
     AP_Mission &mission;
 

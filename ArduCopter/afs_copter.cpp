@@ -73,4 +73,10 @@ AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Copter::afs_mode(void)
     return AP_AdvancedFailsafe::AFS_STABILIZED;
 }
 
+// AFS JV test
+/* bool AP_AdvancedFailsafe_Copter::afs_armed()
+{
+    return copter.motors->armed();
+} */
+
 #endif // ADVANCED_FAILSAFE

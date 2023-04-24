@@ -184,17 +184,20 @@ AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
     max_range_update();
 
     enum control_mode mode = afs_mode();
+
+    // AFS JV test
+    //bool afs_motors = afs_armed();
     
     // check if RC termination is enabled
     // check for RC failure in manual mode or RC failure when AFS_RC_MANUAL is 0
-    if (_state != STATE_PREFLIGHT && !_terminate && _enable_RC_fs &&
+    if ( !_terminate && _enable_RC_fs &&                                                    // afs_motors &&    AFS JV test
         (mode == AFS_MANUAL || mode == AFS_STABILIZED || !_rc_term_manual_only) &&
         _rc_fail_time_seconds > 0 &&
-            (AP_HAL::millis() - last_valid_rc_ms) > (_rc_fail_time_seconds * 1000.0f)) {
+            (AP_HAL::millis() - last_valid_rc_ms) > (_rc_fail_time_seconds * 1000.0f)) {    // Changed first condition. Original: _state != STATE_PREFLIGHT && . AFS JV
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Terminating due to RC failure");
         _terminate.set_and_notify(1);
     }
-    
+
     // tell the failsafe board if we are in manual control
     // mode. This tells it to pass through controls from the
     // receiver
@@ -215,10 +218,46 @@ AP_AdvancedFailsafe::check(bool geofence_breached, uint32_t last_valid_rc_ms)
         if (mode == AFS_AUTO) {
             gcs().send_text(MAV_SEVERITY_DEBUG, "AFS State: AFS_AUTO");
             _state = STATE_AUTO;
-        }
+        } /* else if (mode == AFS_STABILIZED) {            // Added this else if. AFS JV
+            gcs().send_text(MAV_SEVERITY_DEBUG, "AFS State: AFS_STABILIZED");
+            _state = STATE_STABILIZED;
+        } */
+        
         break;
 
     case STATE_AUTO:
+        // this is the normal mode. 
+        if (!gcs_link_ok) {
+            gcs().send_text(MAV_SEVERITY_DEBUG, "AFS State: DATA_LINK_LOSS");
+            _state = STATE_DATA_LINK_LOSS;
+            if (_wp_comms_hold) {
+                _saved_wp = mission.get_current_nav_cmd().index;
+                mission.set_current_cmd(_wp_comms_hold);
+            }
+            // if two events happen within 30s we consider it to be part of the same event
+            if (now - _last_comms_loss_ms > 30*1000UL) {
+                _comms_loss_count++;
+                _last_comms_loss_ms = now;
+            }
+            break;
+        }
+        if (!gps_lock_ok) {
+            gcs().send_text(MAV_SEVERITY_DEBUG, "AFS State: GPS_LOSS");
+            _state = STATE_GPS_LOSS;
+            if (_wp_gps_loss) {
+                _saved_wp = mission.get_current_nav_cmd().index;
+                mission.set_current_cmd(_wp_gps_loss);
+            }
+            // if two events happen within 30s we consider it to be part of the same event
+            if (now - _last_gps_loss_ms > 30*1000UL) {
+                _gps_loss_count++;
+                _last_gps_loss_ms = now;
+            }
+            break;
+        }
+        break;
+
+    case STATE_STABILIZED:          // Add here case specific stuff. AFS JV
         // this is the normal mode. 
         if (!gcs_link_ok) {
             gcs().send_text(MAV_SEVERITY_DEBUG, "AFS State: DATA_LINK_LOSS");
