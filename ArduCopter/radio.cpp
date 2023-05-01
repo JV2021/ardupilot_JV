@@ -25,6 +25,7 @@ void Copter::init_rc_in()
     channel_throttle = rc().channel(rcmap.throttle()-1);
     channel_yaw      = rc().channel(rcmap.yaw()-1);
     channel_killswitch = rc().channel(rcmap.killswitch()-1);         // Killswitch JV
+    channel_homeset = rc().channel(rcmap.homeset()-1);              // Homeset JV
 
     // set rc channel ranges
     channel_roll->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
@@ -32,6 +33,7 @@ void Copter::init_rc_in()
     channel_yaw->set_angle(ROLL_PITCH_YAW_INPUT_MAX);
     channel_throttle->set_range(1000);
     channel_killswitch->set_range(1000);            // Killswitch JV
+    channel_homeset->set_range(1000);               // Homeset JV
 
     // set default dead zones
     default_dead_zones();

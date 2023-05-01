@@ -244,6 +244,7 @@ private:
     RC_Channel *channel_throttle;
     RC_Channel *channel_yaw;
     RC_Channel *channel_killswitch;         // Killswitch JV
+    RC_Channel *channel_homeset;            // Homeset JV
 
     AP_Logger logger;
 

@@ -42,6 +42,13 @@ bool Copter::set_home_to_current_location(bool lock) {
     Location temp_loc;
     if (ahrs.get_location(temp_loc)) {
         if (!set_home(temp_loc, lock)) {
+            static uint8_t counter6 = 0;         // Use to debug JV
+            counter6++;
+            if (counter6 > 50) {
+                counter6 = 0;
+                gcs().send_text(MAV_SEVERITY_CRITICAL, "passes through if 6");
+                AP::logger().Write_Message("passes through if 6");
+            }
             return false;
         }
         // we have successfully set AHRS home, set it for SmartRTL
@@ -61,11 +68,25 @@ bool Copter::set_home(const Location& loc, bool lock)
     // check EKF origin has been set
     Location ekf_origin;
     if (!ahrs.get_origin(ekf_origin)) {
+        static uint8_t counter = 0;         // Use to debug JV
+        counter++;
+        if (counter > 50) {
+            counter = 0;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "passes through if 1");
+            AP::logger().Write_Message("passes through if 1");
+        }
         return false;
     }
 
     // check home is close to EKF origin
     if (far_from_EKF_origin(loc)) {
+        static uint8_t counter2 = 0;         // Use to debug JV
+        counter2++;
+        if (counter2 > 50) {
+            counter2 = 0;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "passes through if 2");
+            AP::logger().Write_Message("passes through if 2");
+        }
         return false;
     }
 
@@ -73,6 +94,13 @@ bool Copter::set_home(const Location& loc, bool lock)
 
     // set ahrs home (used for RTL)
     if (!ahrs.set_home(loc)) {
+        static uint8_t counter3 = 0;         // Use to debug JV
+        counter3++;
+        if (counter3 > 50) {
+            counter3 = 0;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "passes through if 3");
+            AP::logger().Write_Message("passes through if 3");
+        }
         return false;
     }
 
@@ -80,6 +108,14 @@ bool Copter::set_home(const Location& loc, bool lock)
     if (!home_was_set) {
         // record home is set
         AP::logger().Write_Event(LogEvent::SET_HOME);
+
+        static uint8_t counter4 = 0;         // Use to debug JV
+        counter4++;
+        if (counter4 > 50) {
+            counter4 = 0;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "passes through if 4");
+            AP::logger().Write_Message("passes through if 4");
+        }
 
 #if MODE_AUTO_ENABLED == ENABLED
         // log new home position which mission library will pull from ahrs
@@ -95,6 +131,13 @@ bool Copter::set_home(const Location& loc, bool lock)
     // lock home position
     if (lock) {
         ahrs.lock_home();
+        static uint8_t counter5 = 0;         // Use to debug JV
+        counter5++;
+        if (counter5 > 50) {
+            counter5 = 0;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "passes through if 5");
+            AP::logger().Write_Message("passes through if 5");
+        }
     }
 
     // return success

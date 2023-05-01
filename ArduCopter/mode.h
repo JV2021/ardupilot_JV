@@ -90,6 +90,7 @@ public:
     void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
     void get_pilot_desired_planar_movement(float &lateral, float &forward, float &yaw_rate) const; // Added this JV
     bool pcs_killswitch();            // const keyword removed. Killswitch JV
+    bool pcs_homeset();             // Homeset JV
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_throttle() const;
 
@@ -146,7 +147,8 @@ protected:
     RC_Channel *&channel_pitch;
     RC_Channel *&channel_throttle;
     RC_Channel *&channel_yaw;
-    RC_Channel *&channel_killswitch;
+    RC_Channel *&channel_killswitch;        // Killswitch JV
+    RC_Channel *&channel_homeset;           // Homeset JV
     float &G_Dt;
 
     // note that we support two entirely different automatic takeoffs:
