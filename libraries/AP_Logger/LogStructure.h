@@ -744,11 +744,11 @@ struct PACKED log_PSCD {
 #define PID_UNITS  "s----------"
 #define PID_MULTS  "F----------"
 
-// Logging JV
+// Logging JV & see below stuff by searching PCS_FMT
 #define PCS_LABELS "TimeUS,Tar_lat,Tar_fwd,Tar_yaw,Pos_lat,Pos_lon,Vel_lat,Vel_lon"
-#define PCS_FMT    "Qfff"
-#define PCS_UNITS  "s---"
-#define PCS_MULTS  "F---"
+#define PCS_FMT    "Qfffffff"
+#define PCS_UNITS  "s-------"
+#define PCS_MULTS  "F-------"
 
 // @LoggerMessage: ADSB
 // @Description: Automatic Dependant Serveillance - Broadcast detected vehicle information

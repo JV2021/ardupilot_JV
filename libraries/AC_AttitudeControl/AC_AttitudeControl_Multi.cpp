@@ -260,6 +260,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
 	// @Range: 4.0 10.0
 	// @User: Advanced
 	AP_GROUPINFO("rfc_vel_kp", 14, AC_AttitudeControl_Multi, _rfc_vel_kp, AC_ATTITUDE_CONTROL_rfc_vel_kp_DEFAULT),
+
+    // @Param: rfc_pos_kp
+	// @DisplayName: Rotating force controller position kp N/m
+	// @Description: Rotating force controller position proportional gain in N/m
+	// @Range: 1.0 10.0
+	// @User: Advanced
+	AP_GROUPINFO("rfc_pos_kp", 15, AC_AttitudeControl_Multi, _rfc_pos_kp, AC_ATTITUDE_CONTROL_rfc_pos_kp_DEFAULT),
     
     AP_GROUPEND
 };          // PCS new parameters were added at the end Param JV
@@ -489,7 +496,7 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     Vector3f cmd_body;                  // Commands from North-East-0 to body frame (lateral/forward/yaw)
     Vector2f home_xy;                   // Position NE from home (m)
     Vector2f cmd_pos;                   // Position error command in NE referential (N)
-    float _rfc_pos_kp = 3.0f;           // Position error proportionnal gain (N/m)
+    // float _rfc_pos_kp = 3.0f;           // Position error proportionnal gain (N/m)
 
     if (enabled_rfc) {
         if (_ahrs.get_velocity_NED(vel_inertial)) {
@@ -543,7 +550,7 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
 
     _motors.set_lateral(cmd_lateral);          // Set lateral. To be used in output()
     _motors.set_forward(cmd_forward);          // Set forward
-    
+    // hal.console->printf("")          // truc à Hugues pour lire via serial
     /* static uint8_t counter = 0;         // Use to debug JV
     counter++;
     if (counter > 50) {

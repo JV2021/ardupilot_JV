@@ -51,6 +51,7 @@
 #define AC_ATTITUDE_CONTROL_ayaw_plt_DEFAULT            1.571f      // Pilot input proportional gain in rad/sec
 #define AC_ATTITUDE_CONTROL_rfc_vel_plt_DEFAULT         2.0f        // Rotating force controller velocity pilot input scaler in m/s
 #define AC_ATTITUDE_CONTROL_rfc_vel_kp_DEFAULT          6.0f        // Rotating force controller velocity gain N*s/m
+#define AC_ATTITUDE_CONTROL_rfc_pos_kp_DEFAULT          3.0f        // Rotating force controller position gain N/m
 
 class AC_AttitudeControl {
 public:
