@@ -996,7 +996,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             _mav_type = MAV_TYPE_HEXAROTOR;
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS:
-                    _frame_type_string = "PLUS";            // Caution! yaw_factor must be 0 or 1 JV
+                    _frame_type_string = "PLUS";            // Caution! 1) yaw_factor must be 0 or 1. 2) Don't add a yaw contribution if a motor is mostly lateral/forward --> see Idle JV
                     add_motor_raw_pcs(AP_MOTORS_MOT_1, 0.0f, 0.0f,  0.0f, 1, 0.0f,  0.000f, -1.000f);
                     add_motor_raw_pcs(AP_MOTORS_MOT_2, 0.0f, 0.0f,  0.0f, 2, 0.0f, -1.000f,  0.000f);
                     add_motor_raw_pcs(AP_MOTORS_MOT_3, 0.0f, 0.0f,  0.0f, 3, 0.0f,  0.000f,  1.000f);

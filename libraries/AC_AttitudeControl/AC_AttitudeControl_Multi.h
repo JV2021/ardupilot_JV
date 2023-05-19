@@ -121,4 +121,6 @@ protected:
     AP_Float              _rfc_vel_plt;   // Rotating force controller pilot input scaler (m/s)
     AP_Float              _rfc_vel_kp;    // Rotating force controller velocity kp (N*s/m)
     AP_Float              _rfc_pos_kp;    // Rotating force controller position kp (N/m)
+    AP_Int8               _idle_on;       // Motor idling parameter 0 or 1 
+    AP_Float              _idle_thrust;   // Motor idling thrust parameter 0.0 to 0.5 (N)
 };

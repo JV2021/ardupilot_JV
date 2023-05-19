@@ -52,6 +52,8 @@
 #define AC_ATTITUDE_CONTROL_rfc_vel_plt_DEFAULT         2.0f        // Rotating force controller velocity pilot input scaler in m/s
 #define AC_ATTITUDE_CONTROL_rfc_vel_kp_DEFAULT          6.0f        // Rotating force controller velocity gain N*s/m
 #define AC_ATTITUDE_CONTROL_rfc_pos_kp_DEFAULT          3.0f        // Rotating force controller position gain N/m
+#define AC_ATTITUDE_CONTROL_idle_on_DEFAULT               0         // Motor idling parameter ON/OFF 0 or 1
+#define AC_ATTITUDE_CONTROL_idle_thrust_DEFAULT         0.0f        // Motor idling thrust 0.0 0.5 N
 
 class AC_AttitudeControl {
 public:

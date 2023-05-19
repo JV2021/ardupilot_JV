@@ -290,12 +290,16 @@ void AP_MotorsMulticopter::output_pcs()
             _thrust_lfy_outAP[i] = (lateral_thrust * lateral_factorAP[i] + forward_thrust * forward_factorAP[i] + (yaw_thrust / 4.0f + 0.5f ) * yaw_factorAP[i]);      // Range 0.25~0.75 for yaw. yaw_factorAP must be positive. Added this JV
             // I may need to add an upper limit to 1.0f to _thrust_rpyt_out for safety JV
             // record lowest roll + pitch command
-            } else if (yaw_factorAP[i])     // Caution! Yaw factor must be 0 or 1 JV
-            {           // This is a null command for the yaw prop (safety command)
+        } else if (yaw_factorAP[i]) {               // Caution! Yaw factor must be 0 or 1 JV
+                       // This is a null command for the yaw prop (safety command)
                 _thrust_lfy_outAP[i] = 0.5f;
-            } else {            // This is a null command for the lateral/forward props (safety command)
+        } else {            // This is a null command for the lateral/forward props (safety command)
                 _thrust_lfy_outAP[i] = 0.0f;
-            }
+        }
+
+        if ( _rfc_is_on && _idle_is_on && (_thrust_lfy_outAP[i] <= _idle_cmd) && (((lateral_factorAP[i] * lateral_factorAP[i]) > 0.0f) || ((forward_factorAP[i] * forward_factorAP[i]) > 0.0f))) {           // Idle JV
+                _thrust_lfy_outAP[i] = _idle_cmd;
+        }
     }
 
     uint8_t j;

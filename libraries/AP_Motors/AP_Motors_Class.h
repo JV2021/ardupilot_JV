@@ -109,6 +109,7 @@ public:
     void                set_throttle_filter_cutoff(float filt_hz) { _throttle_filter.set_cutoff_frequency(filt_hz); }
     void                set_forward(float forward_in) { _forward_in = forward_in; }; // range -1 ~ +1
     void                set_lateral(float lateral_in) { _lateral_in = lateral_in; };     // range -1 ~ +1
+    void                set_idle(bool rfc_is_on, AP_Int8 idle_is_on, float idle_cmd) { _rfc_is_on = rfc_is_on; _idle_is_on = idle_is_on; _idle_cmd = idle_cmd; };
 
     // for 6DoF vehicles, sets the roll and pitch offset, this rotates the thrust vector in body frame
     virtual void        set_roll_pitch(float roll_deg, float pitch_deg) {};
@@ -271,6 +272,9 @@ protected:
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     DesiredSpoolState   _spool_desired;             // desired spool state
     SpoolState          _spool_state;               // current spool mode
+    bool                _rfc_is_on;                 // Accessor for Boolean to determine if rfc is enabled       Idle JV
+    AP_Int8             _idle_is_on;                // Accessor for Idle parameter ON/OFF  
+    float               _idle_cmd;                  // Accessor for Idle command parameter
 
     // air pressure compensation variables
     float               _air_density_ratio;     // air density / sea level density - decreases in altitude
