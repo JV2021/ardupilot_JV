@@ -16,6 +16,7 @@ void ModeStabilize::run()
     // PCS booleans
     bool auto_yaw_ON = false;
     bool enabled_pcs_rfc = false;
+    bool rc_idle_ON = false;
        
     if (!motors->armed() || pcs_killswitch() || !pcs_homeset() ) {
         // Motors should be Stopped
@@ -24,10 +25,12 @@ void ModeStabilize::run()
         target_yaw_rate = 0.0f;     // See AP_MotorsMulticopter.cpp JV
         auto_yaw_ON = false;
         enabled_pcs_rfc = false;
+        rc_idle_ON = false;
     } else {
         get_pilot_desired_planar_movement(target_lateral, target_forward, target_yaw_rate);      // (PWM) JV
         auto_yaw_ON = true;
         enabled_pcs_rfc = true;
+        pcs_idle(rc_idle_ON);
     }
 
 /* static uint8_t counter = 0;         // Use to debug
@@ -41,6 +44,6 @@ if (counter > 50) {
 
     // call attitude controller. Will need to call my controller JV
     // attitude_control->pcs_manual_bypass(target_lateral, target_forward, target_yaw_rate);
-    attitude_control->pcs_rf_controller( enabled_pcs_rfc, target_forward, target_lateral);      // forward = latitude (North), lateral = longitude (East)
+    attitude_control->pcs_rf_controller( enabled_pcs_rfc, target_forward, target_lateral, rc_idle_ON);      // forward = latitude (North), lateral = longitude (East), Idle JV
     attitude_control->pcs_auto_yaw(auto_yaw_ON, target_yaw_rate);
 }

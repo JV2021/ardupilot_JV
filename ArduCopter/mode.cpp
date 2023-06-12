@@ -24,8 +24,9 @@ Mode::Mode(void) :
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt),
     channel_killswitch(copter.channel_killswitch),
-    channel_homeset(copter.channel_homeset)
-{ };            // Killswitch JV        // Homeset JV
+    channel_homeset(copter.channel_homeset),
+    channel_idle(copter.channel_idle)
+{ };            // Killswitch JV        // Homeset JV       // Idle JV
 
 // return the static controller object corresponding to supplied mode
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)
@@ -464,6 +465,21 @@ bool Mode::pcs_homeset()
 
     }
     return home_was_set;
+}
+
+// PCS Idle JV
+void Mode::pcs_idle(bool &idle_on) const
+{
+    int16_t idle_pwm;
+    idle_pwm = channel_idle->get_control_in();
+    
+    if (idle_pwm >= 1200 ) { 
+        idle_on = true;
+        // return idle_on;
+    } else {
+        idle_on = false;
+        // return idle_on;
+    }
 }
 
 bool Mode::_TakeOff::triggered(const float target_climb_rate) const

@@ -74,8 +74,17 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("HSET",         7, RCMapper, _ch_hset, 9),
 
+    // @Param: IDLE
+    // @DisplayName: Idle channel
+    // @Description: Idle channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Reboot is required for changes to take effect.
+    // @Range: 1 12
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("IDLE",         8, RCMapper, _ch_idle, 10),
+
     AP_GROUPEND
-};          // Killswitch JV        // Homeset JV
+};          // Killswitch JV        // Homeset JV       // Idle JV
 
 // singleton instance
 RCMapper *RCMapper::_singleton;

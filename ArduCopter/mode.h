@@ -91,6 +91,7 @@ public:
     void get_pilot_desired_planar_movement(float &lateral, float &forward, float &yaw_rate) const; // Added this JV
     bool pcs_killswitch();            // const keyword removed. Killswitch JV
     bool pcs_homeset();             // Homeset JV
+    void pcs_idle(bool &idle_on) const;                // Idle JV
     float get_pilot_desired_yaw_rate(int16_t stick_angle);
     float get_pilot_desired_throttle() const;
 
@@ -149,6 +150,7 @@ protected:
     RC_Channel *&channel_yaw;
     RC_Channel *&channel_killswitch;        // Killswitch JV
     RC_Channel *&channel_homeset;           // Homeset JV
+    RC_Channel *&channel_idle;              // Idle JV
     float &G_Dt;
 
     // note that we support two entirely different automatic takeoffs:

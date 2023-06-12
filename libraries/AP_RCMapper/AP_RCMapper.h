@@ -41,6 +41,9 @@ public:
 
     /// Homeset JV - return input channel number for homeset input
     uint8_t homeset() const { return _ch_hset; }
+    
+    /// Idle JV - return input channel number for idle input
+    uint8_t idle() const { return _ch_idle; }
 
     static const struct AP_Param::GroupInfo var_info[];
 
@@ -54,6 +57,7 @@ private:
     AP_Int8 _ch_lateral;
     AP_Int8 _ch_ksw;            // Killswitch JV
     AP_Int8 _ch_hset;           // Homeset JV
+    AP_Int8 _ch_idle;           // Idle JV
     static RCMapper *_singleton;
 };
 
