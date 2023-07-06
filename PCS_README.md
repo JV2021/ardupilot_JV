@@ -1,0 +1,1 @@
+This branch is used to generate custom code for the PCS using the Arducopter firmware v4.2.0.
