@@ -89,7 +89,7 @@ public:
     // Converts thrust (N) in body frame to a motor command BA2310-1220Kv & APC7x5E(-1 to +1). JV
     float thrust_model_ba2310apc7x5(float thrust_body);     
 
-    void pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, bool rc_idle);     // Rotating force controller JV
+    void pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, Vector3f dist_vec_tar_ned);     // Rotating force controller JV
 
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;

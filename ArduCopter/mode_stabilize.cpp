@@ -16,7 +16,7 @@ void ModeStabilize::run()
     // PCS booleans
     bool auto_yaw_ON = false;
     bool enabled_pcs_rfc = false;
-    bool rc_idle_ON = false;
+    // bool rc_idle_ON = false;         // Idle JV
        
     if (!motors->armed() || pcs_killswitch() || !pcs_homeset() ) {
         // Motors should be Stopped
@@ -25,12 +25,12 @@ void ModeStabilize::run()
         target_yaw_rate = 0.0f;     // See AP_MotorsMulticopter.cpp JV
         auto_yaw_ON = false;
         enabled_pcs_rfc = false;
-        rc_idle_ON = false;
+        // rc_idle_ON = false;
     } else {
         get_pilot_desired_planar_movement(target_lateral, target_forward, target_yaw_rate);      // (PWM) JV
         auto_yaw_ON = true;
         enabled_pcs_rfc = true;
-        pcs_idle(rc_idle_ON);
+        // pcs_idle(rc_idle_ON);         // Idle JV
     }
 
 /* static uint8_t counter = 0;         // Use to debug
@@ -41,9 +41,22 @@ if (counter > 50) {
     gcs().send_text(MAV_SEVERITY_CRITICAL, "forward= %5.3f", (float)target_forward);
     gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)target_yaw_rate);
 } */
-
-    // call attitude controller. Will need to call my controller JV
+    Vector3f dist_vec;              // vector to lead vehicle NED (m)
+    Vector3f dist_vec_offs;         // vector to lead vehicle + offset. Null offsets NED (m)
+    Vector3f vel_of_target;         // velocity of lead vehicle NED (m/s)
+    Vector3f dist_vec_tar_ned;      // Distance vector to pass to RF controller NED (m)
+    if (copter.g2.follow_pcs.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
+        dist_vec_tar_ned.x = dist_vec.x;
+        dist_vec_tar_ned.y = dist_vec.y;
+        dist_vec_tar_ned.z = dist_vec.z;
+    } else {
+        dist_vec_tar_ned.x = 0.0f;
+        dist_vec_tar_ned.y = 0.0f;
+        dist_vec_tar_ned.z = 0.0f;
+    }
+    
+    // Call controllers
     // attitude_control->pcs_manual_bypass(target_lateral, target_forward, target_yaw_rate);
-    attitude_control->pcs_rf_controller( enabled_pcs_rfc, target_forward, target_lateral, rc_idle_ON);      // forward = latitude (North), lateral = longitude (East), Idle JV
+    attitude_control->pcs_rf_controller( enabled_pcs_rfc, target_forward, target_lateral, dist_vec_tar_ned);      // forward = latitude (North), lateral = longitude (East), Idle JV
     attitude_control->pcs_auto_yaw(auto_yaw_ON, target_yaw_rate);
 }

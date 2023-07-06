@@ -143,13 +143,13 @@ void AP_Follow::clear_offsets_if_required()
     _offsets_were_zero = false;
 }
 
-// get target's estimated location
+// get target's estimated location. Follow JV
 bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ned) const
 {
-    // exit immediately if not enabled
+    /* // exit immediately if not enabled           // Will use this function so I comment out that. Follow JV
     if (!_enabled) {
         return false;
-    }
+    } */
 
     // check for timeout
     if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
@@ -174,9 +174,13 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
     return true;
 }
 
-// get distance vector to target (in meters) and target's velocity all in NED frame
+// get distance vector to target (in meters) and target's velocity all in NED frame. Follow JV
 bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_offs, Vector3f &vel_ned)
 {
+    // TODO JV: Implement a second correction for a delay in the reception of the infos from the target? Follow JV
+    
+    float dist_max_pcs = 21.5f;             // Constant to replace _dist_max parameter. 21.5 m gives an angle of 45 ° for a tether of 30.35 m.
+
     // get our location
     Location current_loc;
     if (!AP::ahrs().get_position(current_loc)) {
@@ -201,20 +205,23 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     const Vector3f dist_vec = current_loc.get_distance_NED(target_loc);
 
     // fail if too far
-    if (is_positive(_dist_max.get()) && (dist_vec.length() > _dist_max)) {
+    if (dist_vec.length() > dist_max_pcs) {          // Changed the if argument. Follow JV
         clear_dist_and_bearing_to_target();
         return false;
     }
 
     // initialise offsets from distance vector if required
-    init_offsets_if_required(dist_vec);
+    // init_offsets_if_required(dist_vec);          // Comment out. Don't need it.
 
     // get offsets
     Vector3f offsets;
-    if (!get_offsets_ned(offsets)) {
+    offsets.x = 0.0f;
+    offsets.y = 0.0f;
+    offsets.z = 0.0f;
+    /* if (!get_offsets_ned(offsets)) {             // Comment out. Don't need it.
         clear_dist_and_bearing_to_target();
         return false;
-    }
+    } */
 
     // calculate results
     dist_ned = dist_vec;
@@ -250,13 +257,13 @@ bool AP_Follow::get_target_heading_deg(float &heading) const
     return true;
 }
 
-// handle mavlink DISTANCE_SENSOR messages
+// handle mavlink DISTANCE_SENSOR messages. Modified to suit my needs. Follow JV
 void AP_Follow::handle_msg(const mavlink_message_t &msg)
-{
-    // exit immediately if not enabled
+{    
+    /* // exit immediately if not enabled. Comment out
     if (!_enabled) {
         return;
-    }
+    } */
 
     // skip our own messages
     if (msg.sysid == mavlink_system.sysid) {
@@ -295,7 +302,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
         _target_location.lng = packet.lon;
 
         // select altitude source based on FOLL_ALT_TYPE param 
-        if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
+        /* if (_alt_type == AP_FOLLOW_ALTITUDE_TYPE_RELATIVE) {
             // relative altitude
             _target_location.alt = packet.relative_alt / 10;        // convert millimeters to cm
             _target_location.relative_alt = 1;                // set relative_alt flag
@@ -303,7 +310,11 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
             // absolute altitude
             _target_location.alt = packet.alt / 10;                 // convert millimeters to cm
             _target_location.relative_alt = 0;                // reset relative_alt flag
-        }
+        } */
+        
+        // absolute altitude. To replace the above
+        _target_location.alt = packet.alt / 10;                 // convert millimeters to cm
+        _target_location.relative_alt = 0;                // reset relative_alt flag
 
         _target_velocity_ned.x = packet.vx * 0.01f; // velocity north
         _target_velocity_ned.y = packet.vy * 0.01f; // velocity east

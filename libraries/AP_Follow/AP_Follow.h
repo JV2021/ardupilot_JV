@@ -44,6 +44,9 @@ public:
     // set which target to follow
     void set_target_sysid(uint8_t sysid) { _sysid = sysid; }
 
+    // Set which target to follow for the PCS. Hardcoded to 3. Follow JV
+    void set_target_sysid_pcs() { _sysid = 3; }
+
     // restore offsets to zero if necessary, should be called when vehicle exits follow mode
     void clear_offsets_if_required();
 

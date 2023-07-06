@@ -353,6 +353,8 @@ public:
         float pcs_pos_lon;
         float pcs_vel_lat;
         float pcs_vel_lon;
+        float pcs_rf_lat;
+        float pcs_rf_lon;
     };
 
     void Write_PCS(uint8_t msg_type, const PCS_Info &infopcs);       // Logging JV

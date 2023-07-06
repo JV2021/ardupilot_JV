@@ -272,7 +272,7 @@ protected:
     LowPassFilterFloat  _throttle_filter;           // throttle input filter
     DesiredSpoolState   _spool_desired;             // desired spool state
     SpoolState          _spool_state;               // current spool mode
-    bool                _rfc_is_on;                 // Accessor for Boolean to determine if rfc is enabled       Idle JV
+    bool                _rfc_is_on;                 // Boolean accessor to determine if rfc is enabled       Idle JV
     AP_Int8             _idle_is_on;                // Accessor for Idle parameter ON/OFF  
     float               _idle_cmd;                  // Accessor for Idle command parameter
 

@@ -7,9 +7,11 @@
 #if GRIPPER_ENABLED == ENABLED
  # include <AP_Gripper/AP_Gripper.h>
 #endif
-#if MODE_FOLLOW_ENABLED == ENABLED
+/* #if MODE_FOLLOW_ENABLED == ENABLED           // Comment out to avoid errors. Follow JV
  # include <AP_Follow/AP_Follow.h>
-#endif
+#endif */
+
+# include <AP_Follow/AP_Follow.h>           // Follow JV
 
 // Global parameter class.
 //
@@ -580,6 +582,8 @@ public:
     // follow
     AP_Follow follow;
 #endif
+
+    AP_Follow follow_pcs;           // Follow JV
 
 #ifdef USER_PARAMS_ENABLED
     // User custom parameters

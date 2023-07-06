@@ -524,8 +524,10 @@ float AC_AttitudeControl_Multi::thrust_model_ba2310apc7x5(float thrust_body)
 }
 
 // Sets motor commands based on velocity target (latitude/longitude) from pilot. Added this JV
-void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, bool rc_idle)           // Idle JV
-{   // TODO: Delete the saturations since the conversion model thrust to (-1 to +1) already does it. JV
+void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, Vector3f dist_vec_tar_ned)           // Idle JV
+{   // TODO JV: 1) Delete the saturations since the conversion model thrust to (-1 to +1) already does it.
+    //       2) Clean the code by initializing the variables to 0 or a null vector.
+    //       3) Consider the coupling in-between the inclination of the PCS (resultant thrust has a vertical component) and the required side thrust to remain at the centre.     
     
     // float plt_in_scaler = 2.0f;       // I want pilot input as target in the range -2 ~ +2 m/s
     Vector3f vel_inertial; //_inav->get_velocity();    // Velocity in inertial frame (NED). Latitude, Longitude, Vertical down  (m/s)
@@ -546,11 +548,13 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     Vector3f vect_x_NED;
     Vector3f vect_y_NED;
     float cmd_idle = 0.0f;           // Idle thrust setter (N)
+    float side_force = 5.5f;         // Norm of the side force of constant norm and changing orientation (N)
+    Vector2f cmd_rf;            // Command: side force of constant norm and changing orientation North-East (N)
 
     if (enabled_rfc) {
         if (_ahrs.get_velocity_NED(vel_inertial)) {
-            cmd_vel_latitude = _rfc_vel_kp * (plt_latitude * _rfc_vel_plt - vel_inertial.x);     // Proportional latitude vel controller
-            cmd_vel_longitude = _rfc_vel_kp * (plt_longitude * _rfc_vel_plt - vel_inertial.y);     // Proportional longitude vel controller
+            cmd_vel_latitude = _rfc_vel_kp * (plt_latitude * _rfc_vel_plt - vel_inertial.x);     // Proportional latitude vel controller. Target comes from pilot.
+            cmd_vel_longitude = _rfc_vel_kp * (plt_longitude * _rfc_vel_plt - vel_inertial.y);     // Proportional longitude vel controller. Target comes from pilot.
 
         } else {
             cmd_vel_latitude = 0.0f;
@@ -558,17 +562,29 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         }
 
         if (_ahrs.get_relative_position_NE_home(home_xy)) {
-            cmd_pos.x = -_rfc_pos_kp * home_xy.x;
-            cmd_pos.y = -_rfc_pos_kp * home_xy.y;
+            cmd_pos.x = -_rfc_pos_kp * home_xy.x;           // Position target is the home position (0,0)
+            cmd_pos.y = -_rfc_pos_kp * home_xy.y;           // Position target is the home position (0,0)
+            
+            if ((dist_vec_tar_ned.x != 0.0f) && (dist_vec_tar_ned.y != 0.0f)) {
+                cmd_rf.x = side_force * (home_xy.x - dist_vec_tar_ned.x) / safe_sqrt( (home_xy.x - dist_vec_tar_ned.x) * (home_xy.x - dist_vec_tar_ned.x) + (home_xy.y - dist_vec_tar_ned.y) * (home_xy.y - dist_vec_tar_ned.y) );
+                cmd_rf.y = side_force * (home_xy.y - dist_vec_tar_ned.y) / safe_sqrt( (home_xy.x - dist_vec_tar_ned.x) * (home_xy.x - dist_vec_tar_ned.x) + (home_xy.y - dist_vec_tar_ned.y) * (home_xy.y - dist_vec_tar_ned.y) );
+            
+            } else {
+                cmd_rf.x = 0.0f;
+                cmd_rf.y = 0.0f;
+            }
+
         } else {
             cmd_pos.x = 0.0f;
             cmd_pos.y = 0.0f;
-        }
+            cmd_rf.x = 0.0f;
+            cmd_rf.y = 0.0f;
+        }      
         
         // conversion from NED to body frame (lateral/forward/yaw axes)
-        cmd_body.x = cmd_vel_latitude + cmd_pos.x;                          // (North)
-        cmd_body.y = cmd_vel_longitude + cmd_pos.y;                          // (East)
-        cmd_body.z = 0.0f;                          // (Down)
+        cmd_body.x = cmd_vel_latitude + cmd_pos.x + cmd_rf.x;                          // (North)
+        cmd_body.y = cmd_vel_longitude + cmd_pos.y + cmd_rf.y;                         // (East)
+        cmd_body.z = 0.0f;                                                             // (Down)
         cmd_body = rot_body_to_NED.mul_transpose(cmd_body);     // NED -> XYZ (forward/right/down) (Newtons)
 
         // Compensation for the inclination of the PCS
@@ -590,7 +606,7 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         }
         cmd_body.y *= 1.0f / k_y;
 
-        if (_idle_on && rc_idle) {                 // Idle thrust setting (N). Idle JV
+        if (_idle_on) {                 // Idle thrust setting (N). Idle JV
             cmd_idle = thrust_model_ba2310apc7x5(_idle_thrust);
         }
 
@@ -626,6 +642,8 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     _pcscmd.pcs_pos_lon = cmd_pos.y;
     _pcscmd.pcs_vel_lat = cmd_vel_latitude;
     _pcscmd.pcs_vel_lon = cmd_vel_longitude;
+    _pcscmd.pcs_rf_lat = cmd_rf.x;
+    _pcscmd.pcs_rf_lon = cmd_rf.y;
 
     _motors.set_lateral(cmd_lateral);                           // Set lateral. To be used in output()
     _motors.set_forward(cmd_forward);                           // Set forward
