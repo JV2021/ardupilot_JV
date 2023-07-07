@@ -233,8 +233,15 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
+    // @Param: autoyaw_P
+    // @DisplayName: PCS yaw controller proportional gain in sec/rad
+    // @Description: P Gain which produces an output value that is proportional to the current error value
+    // @Range: 0.1 1.0
+    // @User: Advanced
+    AP_GROUPINFO("autoyaw_P", 7, AC_AttitudeControl_Multi, _autoyaw_kp, AC_ATTITUDE_CONTROL_autoyaw_kp_DEFAULT),
+
     AP_GROUPEND
-};
+};          // PCS new parameters were added at the end JV
 
 AC_AttitudeControl_Multi::AC_AttitudeControl_Multi(AP_AHRS_View &ahrs, const AP_Vehicle::MultiCopter &aparm, AP_MotorsMulticopter& motors, float dt) :
     AC_AttitudeControl(ahrs, aparm, motors, dt),
@@ -363,12 +370,12 @@ void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forwa
     } else if ((target_forward < -1.000f) || (target_forward > 1.000f)){
         target_forward = 0.0f;
     } else if ((target_yaw_rate < -1.000f) || (target_yaw_rate > 1.000f)){
-        target_yaw_rate = 0.5f; // Change to 0.5f because it is 0 yaw JV
+        target_yaw_rate = 0.0f;
     }
 
     _motors.set_lateral(target_lateral);          // Set lateral. To be used in output()
     _motors.set_forward(target_forward);          // Set forward
-    _motors.set_yaw(target_yaw_rate);           // Set yaw_rate
+    // _motors.set_yaw(target_yaw_rate);           // Now pcs_auto_yaw
     //    _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);          // Useful later JV
     /* static uint8_t counter = 0;         // Use to debug JV
     counter++;
@@ -376,6 +383,38 @@ void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forwa
         counter = 0;
         gcs().send_text(MAV_SEVERITY_CRITICAL, "lateral= %5.3f", (float)_motors.get_lateral());
         gcs().send_text(MAV_SEVERITY_CRITICAL, "forward= %5.3f", (float)_motors.get_forward());
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)_motors.get_yaw());
+    } */
+}
+
+// Set a yaw command based on the angular velocity from gyros. Ayaw JV
+void AC_AttitudeControl_Multi::pcs_auto_yaw(bool enabled_auto_yaw, float yaw_rate_temp2)
+{   // TODO: Read heading and determine a correction JV
+    float scaler = 1.571f;          // Pilot input proportional gain. To remove JV
+    float target_yaw_rate = yaw_rate_temp2 * scaler;       // I want pilot input as target in the range -1.571 ~ +1.571 rad/s
+    float angular_speed_z = _ahrs.get_gyro_latest().z;         // Gyros smoothed angular velocity in yaw (rad/s)
+    // float kp = 0.4f;            // Proportional gain. To remove JV
+    float cmd_yaw = 0.0f;          // yaw command
+
+    if (enabled_auto_yaw && ((angular_speed_z * angular_speed_z) <= 625.0f ))   // Second condition is a safety if angular speed in yaw exceeds 25 rad/s
+    {
+        cmd_yaw = _autoyaw_kp * (target_yaw_rate - angular_speed_z);     // Proportional yaw_rate controller
+
+        if (cmd_yaw > 1.0f) {
+            cmd_yaw = 1.0f;
+        } else if (cmd_yaw < -1.0f) {
+                    cmd_yaw = -1.0f;
+                }
+    } else
+    {
+        cmd_yaw = 0.0f;
+    }
+    _motors.set_yaw(cmd_yaw);           // Set yaw command
+
+    /* static uint8_t counter = 0;         // Use to debug JV
+    counter++;
+    if (counter > 50) {
+        counter = 0;
         gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)_motors.get_yaw());
     } */
 }
