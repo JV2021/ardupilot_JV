@@ -132,8 +132,8 @@ void Copter::auto_disarm_check()
 }
 
 // motors_output - send output to motors library which will adjust and send to ESCs and servos
-void Copter::motors_output()
-{
+void Copter::motors_output()            // Loop JV
+{/* Comment out JV
 #if ADVANCED_FAILSAFE == ENABLED
     // this is to allow the failsafe module to deliberately crash
     // the vehicle. Only used in extreme circumstances to meet the
@@ -150,7 +150,7 @@ void Copter::motors_output()
     // Update arming delay state
     if (ap.in_arming_delay && (!motors->armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || flightmode->mode_number() == Mode::Number::THROW)) {
         ap.in_arming_delay = false;
-    }
+    } */
 
     // output any servo channels
     SRV_Channels::calc_pwm();
@@ -158,7 +158,7 @@ void Copter::motors_output()
     // cork now, so that all channel outputs happen at once
     SRV_Channels::cork();
 
-    // update output on any aux channels, for manual passthru
+    /* Comment out JV // update output on any aux channels, for manual passthru
     SRV_Channels::output_ch_all();
 
     // update motors interlock state
@@ -177,10 +177,15 @@ void Copter::motors_output()
     } else {
         // send output signals to motors
         flightmode->output_to_motors();
-    }
-
+    } */
+    motors->output_pcs();           // Loop JV
     // push all channels
-    SRV_Channels::push();
+     if (!motors->armed())
+    {
+        SRV_Channels::zero_rc_outputs();
+    } else {
+        SRV_Channels::push();
+    }
 }
 
 // check for pilot stick input to trigger lost vehicle alarm

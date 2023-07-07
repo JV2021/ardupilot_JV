@@ -38,6 +38,9 @@ public:
     // output - sends commands to the motors
     virtual void        output() override;
 
+    // output - sends commands to the motors PCS "copied" from output() JV
+    void                output_pcs();
+
     // output_min - sends minimum values out to the motors
     void                output_min() override;
 

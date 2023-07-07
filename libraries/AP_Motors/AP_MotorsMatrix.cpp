@@ -16,6 +16,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_MotorsMatrix.h"
 #include <AP_Vehicle/AP_Vehicle.h>
+// #include <GCS_MAVLink/GCS.h>            // Added this to debug JV
 
 extern const AP_HAL::HAL& hal;
 
@@ -141,7 +142,7 @@ void AP_MotorsMatrix::set_frame_class_and_type(motor_frame_class frame_class, mo
 }
 
 void AP_MotorsMatrix::output_to_motors()
-{
+{ /* Comment out JV
     int8_t i;
 
     switch (_spool_state) {
@@ -179,7 +180,7 @@ void AP_MotorsMatrix::output_to_motors()
         if (motor_enabled[i]) {
             rc_write(i, output_to_pwm(_actuator[i]));
         }
-    }
+    } */
 }
 
 // get_motor_mask - returns a bitmask of which outputs are being used for motors (1 means being used)
@@ -203,7 +204,7 @@ uint16_t AP_MotorsMatrix::get_motor_mask()
 // output_armed - sends commands to the motors
 // includes new scaling stability patch
 void AP_MotorsMatrix::output_armed_stabilizing()
-{
+{ /* Comment out JV
     uint8_t i;                          // general purpose counter
     float   roll_thrust;                // roll thrust input value, +/- 1.0
     float   pitch_thrust;               // pitch thrust input value, +/- 1.0
@@ -400,7 +401,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
     _throttle_out = throttle_thrust_best_plus_adj / compensation_gain;
 
     // check for failed motor
-    check_for_failed_motor(throttle_thrust_best_plus_adj);
+    check_for_failed_motor(throttle_thrust_best_plus_adj); */
 }
 
 // check for failed motor
@@ -412,7 +413,7 @@ void AP_MotorsMatrix::output_armed_stabilizing()
 //   sets thrust_balanced to true if motors are balanced, false if a motor failure is detected
 //   sets _motor_lost_index to index of failed motor
 void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj)
-{
+{ /* Comment out JV
     // record filtered and scaled thrust output for motor loss monitoring purposes
     float alpha = 1.0f / (1.0f + _loop_rate * 0.5f);
     for (uint8_t i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
@@ -454,6 +455,36 @@ void AP_MotorsMatrix::check_for_failed_motor(float throttle_thrust_best_plus_adj
     // check to see if thrust boost is using more throttle than _throttle_thrust_max
     if ((_throttle_thrust_max * get_compensation_gain() > throttle_thrust_best_plus_adj) && (rpyt_high < 0.9f) && _thrust_balanced) {
         _thrust_boost = false;
+    } */
+}
+
+// add_motor PCS JV
+void AP_MotorsMatrix::add_motor_raw_pcs(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_facpcs, uint8_t testing_order, float throttle_factor, float lateral_fac, float forward_fac)
+{
+    if (initialised_ok()) {
+        // do not allow motors to be set if the current frame type has init correctly
+        return;
+    }
+
+    // ensure valid motor number is provided
+    if (motor_num >= 0 && motor_num < AP_MOTORS_MAX_NUM_MOTORS) {
+
+        // enable motor
+        motor_enabled[motor_num] = true;
+
+        // set roll, pitch, yaw and throttle factors
+        _roll_factor[motor_num] = roll_fac;
+        _pitch_factor[motor_num] = pitch_fac;
+        _yaw_factorpcs[motor_num] = yaw_facpcs;
+        _throttle_factor[motor_num] = throttle_factor;
+        _lateral_factor[motor_num] = lateral_fac;
+        _forward_factor[motor_num] = forward_fac;
+
+        // set order that motor appears in test
+        _test_order[motor_num] = testing_order;
+
+        // call parent class method
+        add_motor_num(motor_num);
     }
 }
 
@@ -552,6 +583,8 @@ void AP_MotorsMatrix::remove_motor(int8_t motor_num)
         _pitch_factor[motor_num] = 0.0f;
         _yaw_factor[motor_num] = 0.0f;
         _throttle_factor[motor_num] = 0.0f;
+        _lateral_factor[motor_num] = 0.0f;          // Added this JV
+        _forward_factor[motor_num] = 0.0f;          // Added this JV
     }
 }
 
@@ -785,8 +818,13 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             _mav_type = MAV_TYPE_HEXAROTOR;
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS: {
-                    _frame_type_string = "PLUS";
-                    static const AP_MotorsMatrix::MotorDef motors[] {
+                    _frame_type_string = "PLUS";            // PCS config. Caution! yaw_factor must be 0 or 1 JV
+                    add_motor_raw_pcs(AP_MOTORS_MOT_1, 0.0f, 0.0f,  0.0f, 1, 0.0f,  0.000f, -1.000f);
+                    add_motor_raw_pcs(AP_MOTORS_MOT_2, 0.0f, 0.0f,  0.0f, 2, 0.0f, -1.000f,  0.000f);
+                    add_motor_raw_pcs(AP_MOTORS_MOT_3, 0.0f, 0.0f,  0.0f, 3, 0.0f,  0.000f,  1.000f);
+                    add_motor_raw_pcs(AP_MOTORS_MOT_4, 0.0f, 0.0f,  0.0f, 4, 0.0f,  1.000f,  0.000f);
+                    add_motor_raw_pcs(AP_MOTORS_MOT_5, 0.0f, 0.0f,  1.0f, 5, 0.0f,  0.000f,  0.000f);
+                    /* Comment out JV static const AP_MotorsMatrix::MotorDef motors[] {
                         {    0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
                         {  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  4 },
                         { -120, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   5 },
@@ -794,7 +832,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
                         {  -60, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  6 },
                         {  120, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   3 },
                     };
-                    add_motors(motors, ARRAY_SIZE(motors));
+                    add_motors(motors, ARRAY_SIZE(motors)); */
                     break;
                 }
                 case MOTOR_FRAME_TYPE_X: {
@@ -1223,7 +1261,7 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
     } // switch frame_class
 
     // normalise factors to magnitude 0.5
-    normalise_rpy_factors();
+    // normalise_rpy_factors();         // Comment out JV
 
     set_initialised_ok(success);
 }

@@ -212,6 +212,12 @@ public:
     // output - sends commands to the motors
     virtual void        output() = 0;
 
+    // output - sends commands to the motors PCS / Get functions for factors PCS JV
+    // virtual void        output_to_motors_pcs() = 0;
+    virtual float       get_lateral_factor(uint8_t i) { return 0.0f; }
+    virtual float       get_forward_factor(uint8_t i) { return 0.0f; }
+    virtual float       get_yaw_factorpcs(uint8_t i) { return 0.0f; }
+    
     // output_min - sends minimum values out to the motors
     virtual void        output_min() = 0;
 

@@ -75,6 +75,9 @@ public:
     // run lowest level body-frame rate controller and send outputs to the motors
     void rate_controller_run() override;
 
+    // run pcs bypass and send outputs to the motors JV
+    void pcs_manual_bypass(float lateral_temp, float forward_temp, float yaw_rate_temp);
+
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
 

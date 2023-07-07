@@ -238,16 +238,10 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 constexpr int8_t Copter::_failsafe_priorities[7];
 
 // Main loop - 400hz
-void Copter::fast_loop()
+void Copter::fast_loop()            // Loop JV
 {
     // update INS immediately to get current gyro data populated
     ins.update();
-
-    // run low level rate controllers that only require IMU data
-    attitude_control->rate_controller_run();
-
-    // send outputs to the motors library immediately
-    motors_output();
 
     // run EKF state estimator (expensive)
     // --------------------
@@ -270,11 +264,14 @@ void Copter::fast_loop()
     // run the attitude controllers
     update_flight_mode();
 
+    // send outputs to the motors library immediately. Was originally under rate_controller_run();
+    motors_output();
+
     // update home from EKF if necessary
     update_home_from_EKF();
 
     // check if we've landed or crashed
-    update_land_and_crash_detectors();
+    // update_land_and_crash_detectors();           // Comment out Loop JV
 
 #if HAL_MOUNT_ENABLED
     // camera mount's fast update

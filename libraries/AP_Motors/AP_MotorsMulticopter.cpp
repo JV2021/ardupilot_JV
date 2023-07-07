@@ -17,6 +17,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_Logger/AP_Logger.h>
+// #include <GCS_MAVLink/GCS.h> // Added this to debug JV
 
 extern const AP_HAL::HAL& hal;
 
@@ -226,7 +227,7 @@ AP_MotorsMulticopter::AP_MotorsMulticopter(uint16_t loop_rate, uint16_t speed_hz
 
 // output - sends commands to the motors
 void AP_MotorsMulticopter::output()
-{
+{ /* Comment out JV
     // update throttle filter
     update_throttle_filter();
 
@@ -249,7 +250,60 @@ void AP_MotorsMulticopter::output()
     output_boost_throttle();
 
     // output raw roll/pitch/yaw/thrust
-    output_rpyt();
+    output_rpyt(); */
+};
+
+void AP_MotorsMulticopter::output_pcs()         // Added this JV
+{
+    uint8_t i;                          // general purpose counter
+    float   lateral_thrust;             // lateral thrust input value, +/- 1.0 (right is positive)
+    float   forward_thrust;             // forward thrust input value, +/- 1.0  (forward is positive)
+    float   yaw_thrust;                 // yaw thrust input value, +/- 1.0
+
+    lateral_thrust = _lateral_in;           // Range +/-1.0
+    forward_thrust = _forward_in;           // Range +/-1.0
+    yaw_thrust = _yaw_in;           // Range +/-1.0
+
+    /* Comment out
+    static uint8_t counter = 0;         // Use to debug JV
+    counter++;
+    if (counter > 50) {
+        counter = 0;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "lateral= %5.3f", (float)lateral_thrust);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "forward= %5.3f", (float)forward_thrust);
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)yaw_thrust);
+    } */
+
+    float _thrust_lfy_outAP[AP_MOTORS_MAX_NUM_MOTORS];       // Motor command range 0.0 ~ 1.0 JV
+    float lateral_factorAP[AP_MOTORS_MAX_NUM_MOTORS];
+    float forward_factorAP[AP_MOTORS_MAX_NUM_MOTORS];
+    float yaw_factorAP[AP_MOTORS_MAX_NUM_MOTORS];
+
+    for (i = 0; i < AP_MOTORS_MAX_NUM_MOTORS; i++) {
+        lateral_factorAP[i] = get_lateral_factor(i);
+        forward_factorAP[i] = get_forward_factor(i);
+        yaw_factorAP[i] = get_yaw_factorpcs(i);
+
+        if ((motor_enabled[i]) && (((lateral_thrust * lateral_factorAP[i]) > 0.0f) || ((forward_thrust * forward_factorAP[i]) > 0.0f) || ((yaw_thrust * yaw_thrust * yaw_factorAP[i]) <= 1.0f) )) {     // Added the second condition JV
+            // calculate the thrust outputs for lateral, forward and yaw
+            _thrust_lfy_outAP[i] = (lateral_thrust * lateral_factorAP[i] + forward_thrust * forward_factorAP[i] + (yaw_thrust / 2.0f + 0.5f ) * yaw_factorAP[i]);      // Range 0~1. yaw_factorAP must be positive. Added this JV
+            // I may need to add an upper limit to 1.0f to _thrust_rpyt_out for safety JV
+            // record lowest roll + pitch command
+        } else if (yaw_factorAP[i]) {    // Caution! Yaw factor must be 0 or 1 JV
+            _thrust_lfy_outAP[i] = 0.5f;
+        } else {
+            _thrust_lfy_outAP[i] = 0.0f;
+        }
+    }
+
+    uint8_t j;
+    // Convert output int the range 0~1 to PWM and send to each motor. It is separate from the other loop to avoid 
+    // the calculation time. Therefore, the commands are written with a really small delay
+    for (j = 0; j < AP_MOTORS_MAX_NUM_MOTORS; j++) {
+        if (motor_enabled[j]) {
+            rc_write(j, output_to_pwm(_thrust_lfy_outAP[j]));
+        }
+    }
 };
 
 // output booster throttle, if any
@@ -428,17 +482,12 @@ float AP_MotorsMulticopter::get_compensation_gain() const
     return ret;
 }
 
-// convert actuator output (0~1) range to pwm range
+// convert actuator output (0~1) range to pwm range. Modified JV
 int16_t AP_MotorsMulticopter::output_to_pwm(float actuator)
 {
     float pwm_output;
-    if (_spool_state == SpoolState::SHUT_DOWN) {
-        // in shutdown mode, use PWM 0 or minimum PWM
-        if (_disarm_disable_pwm && !armed()) {
-            pwm_output = 0;
-        } else {
-            pwm_output = get_pwm_output_min();
-        }
+    if (!armed()) {
+        pwm_output = get_pwm_output_min();          // Might want to change that to 0 in the future. JV
     } else {
         // in all other spool modes, covert to desired PWM
         pwm_output = get_pwm_output_min() + (get_pwm_output_max() - get_pwm_output_min()) * actuator;

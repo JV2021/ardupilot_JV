@@ -431,6 +431,23 @@ void Mode::get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, floa
     // roll_out and pitch_out are returned
 }
 
+// Get pilot desired lateral and forward PWM. JV
+void Mode::get_pilot_desired_planar_movement(float &lateral, float &forward, float &yaw_rate) const
+{
+    // throttle failsafe check
+    if (copter.failsafe.radio || !copter.ap.rc_receiver_present) {
+        lateral = 0.0f;
+        forward = 0.0f;
+        yaw_rate = 0.0f;
+        return;
+    }
+    // fetch roll and pitch inputs
+    lateral = (channel_roll->get_control_in()) / 4500.0f;           //  -1.0 ~ +1.0
+    forward = (channel_pitch->get_control_in()) / 4500.0f;           // -1.0 ~ +1.0
+    yaw_rate = (channel_yaw->get_control_in()) / 4500.0f;           // -1.0 ~ +1.0
+    // lateral and forward are returned.
+}
+
 // transform pilot's roll or pitch input into a desired velocity
 Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
 {

@@ -91,6 +91,7 @@ public:
 
     // pilot input processing
     void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
+    void get_pilot_desired_planar_movement(float &lateral, float &forward, float &yaw_rate) const; // Pilot JV
     Vector2f get_pilot_desired_velocity(float vel_max) const;
     float get_pilot_desired_yaw_rate(float yaw_in);
     float get_pilot_desired_throttle() const;
@@ -1420,22 +1421,24 @@ private:
 };
 
 
-class ModeStabilize : public Mode {
+class ModeStabilize : public Mode {         // Mode JV
 
 public:
     // inherit constructor
     using Mode::Mode;
     Number mode_number() const override { return Number::STABILIZE; }
 
+    // bool init(bool ignore_checks) override; // Line added, might be useful at some point JV
     virtual void run() override;
 
     bool requires_GPS() const override { return false; }
     bool has_manual_throttle() const override { return true; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
-    bool allows_save_trim() const override { return true; }
-    bool allows_autotune() const override { return true; }
-    bool allows_flip() const override { return true; }
+    bool allows_save_trim() const override { return false; }            // Change to false
+    bool allows_autotune() const override { return false; }            // Change to false
+    bool allows_flip() const override { return false; }            // Change to false
+    // bool logs_attitude() const override { return true; } // Might be useful, see code in next class (public): JV
 
 protected:
 
