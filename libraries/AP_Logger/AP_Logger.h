@@ -342,6 +342,14 @@ public:
 
     void Write_PID(uint8_t msg_type, const PID_Info &info);
 
+    struct PCS_Info {         // Logging JV
+        float pcs_tar_lat;
+        float pcs_tar_fwd;
+        float pcs_tar_yaw;
+    };
+
+    void Write_PCS(uint8_t msg_type, const PCS_Info &infopcs);       // Logging JV
+
     // returns true if logging of a message should be attempted
     bool should_log(uint32_t mask) const;
 

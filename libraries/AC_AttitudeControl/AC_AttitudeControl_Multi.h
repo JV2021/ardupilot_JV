@@ -5,6 +5,7 @@
 
 #include "AC_AttitudeControl.h"
 #include <AP_Motors/AP_MotorsMulticopter.h>
+#include <AP_Logger/AP_Logger.h>      // Logging JV
 
 // default rate controller PID gains
 #ifndef AC_ATC_MULTI_RATE_RP_P
@@ -50,6 +51,7 @@ public:
     AC_PID& get_rate_roll_pid() override { return _pid_rate_roll; }
     AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
     AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
+    const AP_Logger::PCS_Info& get_pcscmd_info(void) const { return _pcscmd; }     // Logging JV
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
@@ -86,6 +88,9 @@ public:
 
     // user settable parameters
     static const struct AP_Param::GroupInfo var_info[];
+
+private:
+    AP_Logger::PCS_Info _pcscmd;          // Logging JV
 
 protected:
 

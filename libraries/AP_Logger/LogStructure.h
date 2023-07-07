@@ -378,6 +378,15 @@ struct PACKED log_PID {
     uint8_t limit;
 };
 
+// Logging JV
+struct PACKED log_PCS {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float   pcs_tar_lat;
+    float   pcs_tar_fwd;
+    float   pcs_tar_yaw;
+};
+
 struct PACKED log_WheelEncoder {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -738,6 +747,12 @@ struct PACKED log_VER {
 #define PID_FMT    "QfffffffffB"
 #define PID_UNITS  "s----------"
 #define PID_MULTS  "F----------"
+
+// Logging JV
+#define PCS_LABELS "TimeUS,Tar_lat,Tar_fwd,Tar_yaw"
+#define PCS_FMT    "Qfff"
+#define PCS_UNITS  "s---"
+#define PCS_MULTS  "F---"
 
 // @LoggerMessage: ADSB
 // @Description: Automatic Dependant Serveillance - Broadcast detected vehicle information
@@ -1271,7 +1286,7 @@ struct PACKED log_VER {
 // @Field: ThrAvMx: Maximum average throttle that can be used to maintain attitude controll, derived from throttle mix params
 // @Field: FailFlags: bit 0 motor failed, bit 1 motors balanced, should be 2 in normal flight
 
-// messages for all boards
+// messages for all boards      // See below for PCSC. Logging JV
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns", "-b---", "-----" },    \
@@ -1339,6 +1354,8 @@ LOG_STRUCTURE_FROM_ESC_TELEM \
       "PIDP", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDY_MSG, sizeof(log_PID), \
       "PIDY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
+    { LOG_PCSCMD_MSG, sizeof(log_PCS), \
+      "PCSC", PCS_FMT,  PCS_LABELS, PCS_UNITS, PCS_MULTS }, \
     { LOG_PIDA_MSG, sizeof(log_PID), \
       "PIDA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDS_MSG, sizeof(log_PID), \
@@ -1477,6 +1494,7 @@ enum LogMessages : uint8_t {
     LOG_VIDEO_STABILISATION_MSG,
     LOG_MOTBATT_MSG,
     LOG_VER_MSG,
+    LOG_PCSCMD_MSG,     // Logging JV
 
     _LOG_LAST_MSG_
 };
