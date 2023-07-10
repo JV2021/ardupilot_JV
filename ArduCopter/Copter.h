@@ -220,6 +220,9 @@ public:
 
     Copter(void);
 
+    // Killswitch JV
+    uint32_t get_last_msg_rc() {return last_radio_update_ms; }
+
 private:
 
     // key aircraft parameters passed to multiple libraries

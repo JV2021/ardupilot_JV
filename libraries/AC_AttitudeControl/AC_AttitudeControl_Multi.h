@@ -114,7 +114,9 @@ protected:
     AP_Float              _thr_mix_min;     // throttle vs attitude control prioritisation used when landing (higher values mean we prioritise attitude control over throttle)
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
     
-    // Param JV
+    // PCS parameters. Param JV
     AP_Float              _ayaw_kp;         // Yaw controller proportional gain in sec/rad
     AP_Float              _ayaw_plt;        // Pilot input proportional gain in rad/sec (eventually desired heading)
+    AP_Float              _rfc_vel_plt;   // Rotating force controller pilot input scaler (m/s)
+    AP_Float              _rfc_vel_kp;    // Rotating force controller velocity kp (N*s/m)
 };

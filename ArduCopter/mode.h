@@ -92,7 +92,7 @@ public:
     // pilot input processing
     void get_pilot_desired_lean_angles(float &roll_out, float &pitch_out, float angle_max, float angle_limit) const;
     void get_pilot_desired_planar_movement(float &lateral, float &forward, float &yaw_rate) const; // Pilot JV
-    bool pcs_killswitch() const;            // Killswitch JV
+    bool pcs_killswitch();            // Killswitch JV
     Vector2f get_pilot_desired_velocity(float vel_max) const;
     float get_pilot_desired_yaw_rate(float yaw_in);
     float get_pilot_desired_throttle() const;

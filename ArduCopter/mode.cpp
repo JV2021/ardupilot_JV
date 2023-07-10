@@ -483,12 +483,21 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
 }
 
 // Killswitch JV
-bool Mode::pcs_killswitch() const
-{   // TODO: revise this function because it isn't that useful since there are RC switch configurations provide as parameters
+bool Mode::pcs_killswitch()
+{   // TODO JV: revise the >= 1200 criteria because a high position of the switch will arm the PCS not disarm it
     float killswitch;
     killswitch = channel_killswitch->get_control_in();
+    uint32_t last_valid_rc_msg = copter.get_last_msg_rc();       // Gets the last valid rc msg time
+    float rc_fail_time_sec = 2.0f;                               // Transfer to parameter. JV
+    static uint8_t counter = 1;
 
-    if (killswitch >= 1200.0f ) {
+    if (killswitch >= 1200.0f || ( rc_fail_time_sec > 0 &&
+            (AP_HAL::millis() - last_valid_rc_msg) > (rc_fail_time_sec * 1000.0f))) {
+        if (counter <= 10) {
+            counter++;
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Killswitch or RC failsafe");
+            AP::logger().Write_Message("Killswitch or RC failsafe");
+        }
         return true;
     } else {
         return false;
