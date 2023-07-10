@@ -452,11 +452,22 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             // do nothing, used to control the rate of the winch and is processed within AP_Winch
             break;
 
-#ifdef USERHOOK_AUXSWITCH
-        case AUX_FUNC::USER_FUNC1:
-            copter.userhook_auxSwitch1(ch_flag);
+        case AUX_FUNC::USER_FUNC1:          
+            // Homeset JV
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                copter.channel_homeset->set_control_in(1900);
+            } else {
+                copter.channel_homeset->set_control_in(1100);
+            }
+
             break;
 
+#ifdef USERHOOK_AUXSWITCH
+        /* case AUX_FUNC::USER_FUNC1: // Comment out to avoid potential building errores. Homeset JV
+
+            copter.userhook_auxSwitch1(ch_flag);
+            break;
+        */
         case AUX_FUNC::USER_FUNC2:
             copter.userhook_auxSwitch2(ch_flag);
             break;

@@ -119,4 +119,5 @@ protected:
     AP_Float              _ayaw_plt;        // Pilot input proportional gain in rad/sec (eventually desired heading)
     AP_Float              _rfc_vel_plt;   // Rotating force controller pilot input scaler (m/s)
     AP_Float              _rfc_vel_kp;    // Rotating force controller velocity kp (N*s/m)
+    AP_Float              _rfc_pos_kp;    // Rotating force controller position kp (N/m)
 };

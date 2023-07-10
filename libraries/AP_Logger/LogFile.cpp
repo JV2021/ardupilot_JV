@@ -435,6 +435,10 @@ void AP_Logger::Write_PCS(uint8_t msg_type, const PCS_Info &infopcs)
         pcs_tar_lat          : infopcs.pcs_tar_lat,
         pcs_tar_fwd          : infopcs.pcs_tar_fwd,
         pcs_tar_yaw          : infopcs.pcs_tar_yaw,
+        pcs_pos_lat          : infopcs.pcs_pos_lat,
+        pcs_pos_lon          : infopcs.pcs_pos_lon,
+        pcs_vel_lat          : infopcs.pcs_vel_lat,
+        pcs_vel_lon          : infopcs.pcs_vel_lon,
     };
     WriteBlock(&pkt, sizeof(pkt));
 }

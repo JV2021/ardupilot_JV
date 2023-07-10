@@ -17,7 +17,7 @@ void ModeStabilize::run()
     bool auto_yaw_ON = false;
     bool enabled_pcs_rfc = false;
 
-    if (!motors->armed() || pcs_killswitch()) {
+    if (!motors->armed() || pcs_killswitch() || !pcs_homeset() ) {
         // Motors should be Stopped
         target_lateral = 0.0f;
         target_forward = 0.0f;

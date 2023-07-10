@@ -346,6 +346,10 @@ public:
         float pcs_tar_lat;
         float pcs_tar_fwd;
         float pcs_tar_yaw;
+        float pcs_pos_lat;
+        float pcs_pos_lon;
+        float pcs_vel_lat;
+        float pcs_vel_lon;
     };
 
     void Write_PCS(uint8_t msg_type, const PCS_Info &infopcs);       // Logging JV

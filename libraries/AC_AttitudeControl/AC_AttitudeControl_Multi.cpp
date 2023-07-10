@@ -261,6 +261,13 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
 	// @User: Advanced
 	AP_GROUPINFO("rfc_vel_kp", 14, AC_AttitudeControl_Multi, _rfc_vel_kp, AC_ATTITUDE_CONTROL_rfc_vel_kp_DEFAULT),
 
+    // @Param: rfc_pos_kp
+	// @DisplayName: Rotating force controller position kp N/m
+	// @Description: Rotating force controller position proportional gain in N/m
+	// @Range: 1.0 10.0
+	// @User: Advanced
+	AP_GROUPINFO("rfc_pos_kp", 15, AC_AttitudeControl_Multi, _rfc_pos_kp, AC_ATTITUDE_CONTROL_rfc_pos_kp_DEFAULT),
+
     AP_GROUPEND
 };          // PCS new parameters were added at the end. Param JV
 
@@ -483,6 +490,8 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     float cmd_forward;                       // Forward command
     const Matrix3f &rot_body_to_NED = _ahrs.get_rotation_body_to_ned();               // Rotation matrix from body frame to NED
     Vector3f cmd_body;                  // Commands from North-East-0 to body frame (lateral/forward/yaw)
+    Vector2f home_xy;                   // Position NE from home (m)
+    Vector2f cmd_pos;                   // Position error command in NE referential (N)
 
     if (enabled_rfc) {
         if (_ahrs.get_velocity_NED(vel_inertial)) {
@@ -494,9 +503,17 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
             cmd_vel_longitude = 0.0f;
         }       
 
+        if (_ahrs.get_relative_position_NE_home(home_xy)) {
+            cmd_pos.x = -_rfc_pos_kp * home_xy.x;
+            cmd_pos.y = -_rfc_pos_kp * home_xy.y;
+        } else {
+            cmd_pos.x = 0.0f;
+            cmd_pos.y = 0.0f;
+        }
+
         // conversion from NED to body frame (lateral/forward/yaw axes)
-        cmd_body.x = cmd_vel_latitude;                          // (North)
-        cmd_body.y = cmd_vel_longitude;                          // (East)
+        cmd_body.x = cmd_vel_latitude + cmd_pos.x;                          // (North)
+        cmd_body.y = cmd_vel_longitude + cmd_pos.y;                          // (East)
         cmd_body.z = 0.0f;                          // (Down)
         cmd_body = rot_body_to_NED.mul_transpose(cmd_body);     // NED -> XYZ (forward/right/down) (Newtons)
 
@@ -521,6 +538,10 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     // Logging JV
     _pcscmd.pcs_tar_lat = cmd_lateral;
     _pcscmd.pcs_tar_fwd = cmd_forward;
+    _pcscmd.pcs_pos_lat = cmd_pos.x;
+    _pcscmd.pcs_pos_lon = cmd_pos.y;
+    _pcscmd.pcs_vel_lat = cmd_vel_latitude;
+    _pcscmd.pcs_vel_lon = cmd_vel_longitude;
 
     _motors.set_lateral(cmd_lateral);          // Set lateral. To be used in output()
     _motors.set_forward(cmd_forward);          // Set forward

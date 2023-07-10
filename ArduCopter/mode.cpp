@@ -23,8 +23,9 @@ Mode::Mode(void) :
     channel_throttle(copter.channel_throttle),
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt),
-    channel_killswitch(copter.channel_killswitch)
-{ };            // Killswitch JV
+    channel_killswitch(copter.channel_killswitch),
+    channel_homeset(copter.channel_homeset)
+{ };            // Killswitch JV    // Homeset JV
 
 // return the static controller object corresponding to supplied mode
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)
@@ -502,6 +503,28 @@ bool Mode::pcs_killswitch()
     } else {
         return false;
     }
+}
+
+// PCS Homeset JV
+bool Mode::pcs_homeset()
+{
+    int16_t homeset;
+    homeset = channel_homeset->get_control_in();
+    static bool flip =  false;         // Detection of a flip of the switch 
+    static bool home_was_set = false;       // Boolean to avoid to engage rfc if home hasn't been previously set
+
+    if (homeset > 1200 && !flip ) {
+        home_was_set = copter.set_home_to_current_location( false );           // Not sure if it should be true or false JV
+        flip = true;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Home has been manually reset");
+        AP::logger().Write_Message("Home has been manually reset");
+        return home_was_set;
+
+    } else if ( homeset <= 1200 && flip) {
+        flip = false;
+
+    }
+    return home_was_set;
 }
 
 bool Mode::_TakeOff::triggered(const float target_climb_rate) const
