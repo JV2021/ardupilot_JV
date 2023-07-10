@@ -83,6 +83,11 @@ public:
     // run pcs auto yaw controller. Ayaw JV
     void pcs_auto_yaw(bool enabled_auto_yaw, float yaw_rate_temp2);     // Added the second entry
 
+    // Converts thrust (N) in body frame to a motor command (-1 to +1). RFC JV
+    float thrust_model_br2212(float thrust_body);      
+
+    void pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude);     // Rotating force controller. RFC JV
+
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
 

@@ -365,7 +365,7 @@ void AC_AttitudeControl_Multi::rate_controller_run()
     control_monitor_update();
 }
 
-// Get pilot input and and apply limit in the range -1~1. JV
+// Get pilot input and and apply limit in the range -1 ~ +1. JV
 void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forward_temp, float yaw_rate_temp)
 {
     float target_lateral = lateral_temp;
@@ -400,7 +400,7 @@ void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forwa
 
 // Set a yaw command based on the angular velocity from gyros. Ayaw JV
 void AC_AttitudeControl_Multi::pcs_auto_yaw(bool enabled_auto_yaw, float yaw_rate_temp2)
-{   // TODO: Read heading and determine a correction JV
+{   // TODO JV: Read heading and determine a correction
     float target_yaw_rate = yaw_rate_temp2 * _ayaw_plt;       // I want pilot input as target in the range -1.571 ~ +1.571 rad/s
     float angular_speed_z = _ahrs.get_gyro_latest().z;         // Gyros smoothed angular velocity in yaw (rad/s)
     // float kp = 0.4f;            // Proportional gain. To remove JV
@@ -431,6 +431,97 @@ void AC_AttitudeControl_Multi::pcs_auto_yaw(bool enabled_auto_yaw, float yaw_rat
         gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)_motors.get_yaw());
     } */
 }
+
+// Converts Thrust (N) to a cmd from -1 to +1. For BR2212 motor with 1045 prop. RFC JV
+float AC_AttitudeControl_Multi::thrust_model_br2212(float thrust_body)
+{
+    float thrust_sign = 1.0f;
+    float max_cmd = 0.681f;         // Maximum command for BR2212 (PWM: 1681 microsec)
+    float cmd_0_to_1 = 0.0f;
+    float coeff_x2 = 6.6109f;       // Quadratic approximation coefficient
+    float coeff_x1 = 6.7972f;       // Quadratic approximation coefficient
+    float coeff_x0 = -0.23523f;       // Quadratic approximation coefficient
+
+    if ((thrust_body < 0.25f ) && (thrust_body > -0.25f)) {
+        return cmd_0_to_1;
+
+    } else if (thrust_body < 0.0f) {
+        thrust_sign = -1.0f;
+
+    } else if ((thrust_body <= -7.45f ) || (thrust_body >= 7.45f)) {
+        return (max_cmd * thrust_sign);
+
+    }
+
+    cmd_0_to_1 = (-coeff_x1 + safe_sqrt(coeff_x1 * coeff_x1 - 4.0f * coeff_x2 * (coeff_x0 - thrust_sign * thrust_body))) / (2.0f * coeff_x2);
+
+    return (thrust_sign * cmd_0_to_1);
+} 
+
+// Sets motor commands based on velocity target (latitude/longitude) from pilot. RFC JV
+void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude)
+{   // TODO JV: Delete the saturations since the conversion model thrust to (-1 to +1) already does it.
+
+    // _inav = new AP_InertialNav();
+    float plt_in_scaler = 2.0f;       // I want pilot input as target in the range -2 ~ +2 m/s
+    Vector3f vel_inertial; //_inav->get_velocity();    // Velocity in inertial frame (NED). Latitude, Longitude, Vertical down  (m/s)
+    float kp_vel = 6.0f;            // Proportional gain. (N*s/m)
+    float cmd_vel_latitude = 0.0f;          // latitude command
+    float cmd_vel_longitude = 0.0f;          // longitude command
+    float cmd_lateral;                       // Lateral command
+    float cmd_forward;                       // Forward command
+    const Matrix3f &rot_body_to_NED = _ahrs.get_rotation_body_to_ned();               // Rotation matrix from body frame to NED
+    Vector3f cmd_body;                  // Commands from North-East-0 to body frame (lateral/forward/yaw)
+
+    if (enabled_rfc) {
+        if (_ahrs.get_velocity_NED(vel_inertial)) {
+            cmd_vel_latitude = kp_vel * (plt_latitude * plt_in_scaler - vel_inertial.x);     // Proportional latitude vel controller
+            cmd_vel_longitude = kp_vel * (plt_longitude * plt_in_scaler - vel_inertial.y);     // Proportional longitude vel controller
+
+        } else
+        {
+            cmd_vel_latitude = 0.0f;
+            cmd_vel_longitude = 0.0f;
+        }       
+
+        // conversion from NED to body frame (lateral/forward/yaw axes)
+        cmd_body.x = cmd_vel_latitude;                          // (North)
+        cmd_body.y = cmd_vel_longitude;                          // (East)
+        cmd_body.z = 0.0f;                          // (Down)
+        cmd_body = rot_body_to_NED.mul_transpose(cmd_body);     // NED -> XYZ (longitudinal/transversal/Up?) (Newtons)
+
+        // conversion from thrust (N) in body frame to -1 to +1 range
+        cmd_lateral = thrust_model_br2212(cmd_body.y);
+        cmd_forward = thrust_model_br2212(cmd_body.x);
+
+        if (cmd_lateral > 1.0f) {
+            cmd_lateral = 1.0f;
+        } else if (cmd_lateral < -1.0f) {
+                    cmd_lateral = -1.0f;
+        } else if (cmd_forward > 1.0f) {
+                    cmd_forward = 1.0f;
+        } else if (cmd_forward < -1.0f) {
+                    cmd_forward = -1.0f;
+        }
+    } else {
+        cmd_lateral = 0.0f;
+        cmd_forward = 0.0f;
+    }
+
+    // Logging JV
+    _pcscmd.pcs_tar_lat = cmd_lateral;
+    _pcscmd.pcs_tar_fwd = cmd_forward;
+
+    _motors.set_lateral(cmd_lateral);          // Set lateral. To be used in output()
+    _motors.set_forward(cmd_forward);          // Set forward
+
+    /* static uint8_t counter = 0;         // Use to debug JV
+    counter++;
+    if (counter > 50) {
+        counter = 0;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)_motors.get_yaw());
+    } */
+} 
 
 // sanity check parameters.  should be called once before takeoff
 void AC_AttitudeControl_Multi::parameter_sanity_check()
