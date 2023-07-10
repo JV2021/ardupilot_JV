@@ -47,8 +47,8 @@
 #define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT             0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 
 // Param JV
-#define AC_ATTITUDE_CONTROL_autoyaw_kp_DEFAULT          0.4f        // Yaw controller proportional gain in sec/rad
-// #define AC_ATTITUDE_CONTROL_autoyaw_pt_DEFAULT          1.571f      // Pilot input proportional gain in rad/sec
+#define AC_ATTITUDE_CONTROL_ayaw_kp_DEFAULT             0.4f        // Yaw controller proportional gain in sec/rad
+#define AC_ATTITUDE_CONTROL_ayaw_plt_DEFAULT            1.571f      // Pilot input proportional gain in rad/sec
 
 class AC_AttitudeControl {
 public:

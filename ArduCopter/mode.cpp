@@ -22,8 +22,9 @@ Mode::Mode(void) :
     channel_pitch(copter.channel_pitch),
     channel_throttle(copter.channel_throttle),
     channel_yaw(copter.channel_yaw),
-    G_Dt(copter.G_Dt)
-{ };
+    G_Dt(copter.G_Dt),
+    channel_killswitch(copter.channel_killswitch)
+{ };            // Killswitch JV
 
 // return the static controller object corresponding to supplied mode
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)
@@ -479,6 +480,19 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
     // We scale the output by the ratio of the distance to the square to the unit circle and multiply by vel_max
     vel *= vel_max / vel_scaler.length();
     return vel;
+}
+
+// Killswitch JV
+bool Mode::pcs_killswitch() const
+{   // TODO: revise this function because it isn't that useful since there are RC switch configurations provide as parameters
+    float killswitch;
+    killswitch = channel_killswitch->get_control_in();
+
+    if (killswitch >= 1200.0f ) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 bool Mode::_TakeOff::triggered(const float target_climb_rate) const

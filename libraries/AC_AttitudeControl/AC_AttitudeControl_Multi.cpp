@@ -233,12 +233,19 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
-    // @Param: autoyaw_P
+    // @Param: ayaw_P
     // @DisplayName: PCS yaw controller proportional gain in sec/rad
     // @Description: P Gain which produces an output value that is proportional to the current error value
     // @Range: 0.1 1.0
     // @User: Advanced
-    AP_GROUPINFO("autoyaw_P", 7, AC_AttitudeControl_Multi, _autoyaw_kp, AC_ATTITUDE_CONTROL_autoyaw_kp_DEFAULT),
+    AP_GROUPINFO("ayaw_P", 7, AC_AttitudeControl_Multi, _ayaw_kp, AC_ATTITUDE_CONTROL_ayaw_kp_DEFAULT),
+
+    // @Param: ayaw_plt
+	// @DisplayName: Pilot input proportional gain in rad/sec
+	// @Description: Pilot proportional gain which converts an input -1 to +1 to the desired output range in rad/sec
+	// @Range: 0.7 4.0
+	// @User: Advanced
+	AP_GROUPINFO("ayaw_plt", 12, AC_AttitudeControl_Multi, _ayaw_plt, AC_ATTITUDE_CONTROL_ayaw_plt_DEFAULT),
 
     AP_GROUPEND
 };          // PCS new parameters were added at the end JV
@@ -394,15 +401,14 @@ void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forwa
 // Set a yaw command based on the angular velocity from gyros. Ayaw JV
 void AC_AttitudeControl_Multi::pcs_auto_yaw(bool enabled_auto_yaw, float yaw_rate_temp2)
 {   // TODO: Read heading and determine a correction JV
-    float scaler = 1.571f;          // Pilot input proportional gain. To remove JV
-    float target_yaw_rate = yaw_rate_temp2 * scaler;       // I want pilot input as target in the range -1.571 ~ +1.571 rad/s
+    float target_yaw_rate = yaw_rate_temp2 * _ayaw_plt;       // I want pilot input as target in the range -1.571 ~ +1.571 rad/s
     float angular_speed_z = _ahrs.get_gyro_latest().z;         // Gyros smoothed angular velocity in yaw (rad/s)
     // float kp = 0.4f;            // Proportional gain. To remove JV
     float cmd_yaw = 0.0f;          // yaw command
 
     if (enabled_auto_yaw && ((angular_speed_z * angular_speed_z) <= 625.0f ))   // Second condition is a safety if angular speed in yaw exceeds 25 rad/s
     {
-        cmd_yaw = _autoyaw_kp * (target_yaw_rate - angular_speed_z);     // Proportional yaw_rate controller
+        cmd_yaw = _ayaw_kp * (target_yaw_rate - angular_speed_z);     // Proportional yaw_rate controller
 
         if (cmd_yaw > 1.0f) {
             cmd_yaw = 1.0f;

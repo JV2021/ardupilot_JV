@@ -110,6 +110,6 @@ protected:
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
     
     // Param JV
-    AP_Float              _autoyaw_kp;      // Yaw controller proportional gain in sec/rad
-    // AP_Float              _autoyaw_pt;     // Pilot input proportional gain in rad/sec
+    AP_Float              _ayaw_kp;         // Yaw controller proportional gain in sec/rad
+    AP_Float              _ayaw_plt;        // Pilot input proportional gain in rad/sec (eventually desired heading)
 };

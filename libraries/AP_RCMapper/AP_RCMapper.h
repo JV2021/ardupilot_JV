@@ -36,6 +36,9 @@ public:
     /// lateral - return input channel number for lateral input
     uint8_t lateral() const { return _ch_lateral; }
 
+    /// Killswitch JV - return input channel number for killswitch input
+    uint8_t killswitch() const { return _ch_ksw; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -46,6 +49,7 @@ private:
     AP_Int8 _ch_throttle;
     AP_Int8 _ch_forward;
     AP_Int8 _ch_lateral;
+    AP_Int8 _ch_ksw;            // Killswitch JV
     static RCMapper *_singleton;
 };
 
