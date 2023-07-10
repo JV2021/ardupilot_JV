@@ -295,6 +295,10 @@ void AP_MotorsMulticopter::output_pcs()         // Added this JV
             // This is a null command for the lateral/forward props (safety command)
             _thrust_lfy_outAP[i] = 0.0f;
         }
+
+        if ( _rfc_is_on && _idle_is_on && (_thrust_lfy_outAP[i] <= _idle_cmd) && (((lateral_factorAP[i] * lateral_factorAP[i]) > 0.0f) || ((forward_factorAP[i] * forward_factorAP[i]) > 0.0f))) {      // Idle JV
+                _thrust_lfy_outAP[i] = _idle_cmd;
+        }
     }
 
     uint8_t j;

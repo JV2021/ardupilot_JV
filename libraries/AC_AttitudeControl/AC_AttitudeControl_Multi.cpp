@@ -268,6 +268,20 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
 	// @User: Advanced
 	AP_GROUPINFO("rfc_pos_kp", 15, AC_AttitudeControl_Multi, _rfc_pos_kp, AC_ATTITUDE_CONTROL_rfc_pos_kp_DEFAULT),
 
+    // @Param: idle_on
+	// @DisplayName: Motor idling boolean parameter
+	// @Description: Motor idling boolean parameter
+	// @Range: 0 1
+	// @User: Advanced
+	AP_GROUPINFO("idle_on", 16, AC_AttitudeControl_Multi, _idle_on, AC_ATTITUDE_CONTROL_idle_on_DEFAULT),
+
+    // @Param: idle_thrust
+	// @DisplayName: Motor idling thrust parameter N
+	// @Description: Motor idling thrust parameter N
+	// @Range: 0.0 0.5
+	// @User: Advanced
+	AP_GROUPINFO("idle_thrust", 17, AC_AttitudeControl_Multi, _idle_thrust, AC_ATTITUDE_CONTROL_idle_thrust_DEFAULT),
+
     AP_GROUPEND
 };          // PCS new parameters were added at the end. Param JV
 
@@ -492,6 +506,13 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     Vector3f cmd_body;                  // Commands from North-East-0 to body frame (lateral/forward/yaw)
     Vector2f home_xy;                   // Position NE from home (m)
     Vector2f cmd_pos;                   // Position error command in NE referential (N)
+    float k_x;                          // Inclination compensation factor for X axis (Body referential)
+    float k_y;                          // Inclination compensation factor for Y axis (Body referential)
+    Vector3f vect_k_x;                  // Initially in XYZ body referential
+    Vector3f vect_k_y;                  // Initially in XYZ body referential
+    Vector3f vect_x_NED;
+    Vector3f vect_y_NED;
+    float cmd_idle = 0.0f;           // Idle thrust setter (N)
 
     if (enabled_rfc) {
         if (_ahrs.get_velocity_NED(vel_inertial)) {
@@ -517,19 +538,51 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         cmd_body.z = 0.0f;                          // (Down)
         cmd_body = rot_body_to_NED.mul_transpose(cmd_body);     // NED -> XYZ (forward/right/down) (Newtons)
 
+        // Compensation for the inclination of the PCS
+        vect_k_x = Vector3f(1.0f, 0.0f, 0.0f);
+        vect_k_x = rot_body_to_NED * vect_k_x;            // Rotation from XYZ to NED referential (Vp vector)
+        vect_x_NED =  Vector3f(vect_k_x.x, vect_k_x.y, 0.0f);         // 2D Vector with the same orientation of Vp (Vi vector)
+        k_x = vect_k_x * vect_x_NED / safe_sqrt(vect_x_NED.x * vect_x_NED.x + vect_x_NED.y * vect_x_NED.y);
+        if (k_x <= 0.0f || k_x > 2.0f) {       // Safety limits. 2.0f equals 60 ° of inclination
+            k_x = 1.0f;
+        }
+        cmd_body.x *= 1.0f / k_x;
+
+        vect_k_y = Vector3f(0.0f, 1.0f, 0.0f);
+        vect_k_y = rot_body_to_NED * vect_k_y;            // Rotation from XYZ to NED referential (Vp vector)
+        vect_y_NED =  Vector3f(vect_k_y.x, vect_k_y.y, 0.0f);         // 2D Vector with the same orientation of Vp (Vi vector)
+        k_y = vect_k_y * vect_y_NED / safe_sqrt(vect_y_NED.x * vect_y_NED.x + vect_y_NED.y * vect_y_NED.y);
+        if (k_y <= 0.0f || k_y > 2.0f) {       // Safety limits. 2.0f equals 60 ° of inclination
+            k_y = 1.0f;
+        }
+        cmd_body.y *= 1.0f / k_y;
+
+        if (_idle_on) {                 // Idle thrust setting (N). Idle JV
+            cmd_idle = thrust_model_br2212(_idle_thrust);
+        }
+
         // conversion from thrust (N) in body frame to -1 to +1 range
         cmd_lateral = thrust_model_br2212(cmd_body.y);
         cmd_forward = thrust_model_br2212(cmd_body.x);
 
+        /* Don't think I need it yet JV // This is meant to limit the net thrust by the PCS above the limit of a single thruster (7.45 N)
+        if ((cmd_lateral * cmd_lateral + cmd_forward * cmd_forward) > 1.0f) {
+            cmd_lateral *= 1.0f / safe_sqrt(cmd_lateral * cmd_lateral + cmd_forward * cmd_forward);
+            cmd_forward *= 1.0f / safe_sqrt(cmd_lateral * cmd_lateral + cmd_forward * cmd_forward);
+        } */       
+
         if (cmd_lateral > 1.0f) {
             cmd_lateral = 1.0f;
         } else if (cmd_lateral < -1.0f) {
-                    cmd_lateral = -1.0f;
-        } else if (cmd_forward > 1.0f) {
-                    cmd_forward = 1.0f;
-        } else if (cmd_forward < -1.0f) {
-                    cmd_forward = -1.0f;
+            cmd_lateral = -1.0f;
         }
+        
+        if (cmd_forward > 1.0f) {
+            cmd_forward = 1.0f;
+        } else if (cmd_forward < -1.0f) {
+            cmd_forward = -1.0f;
+        }
+
     } else {
         cmd_lateral = 0.0f;
         cmd_forward = 0.0f;
@@ -545,6 +598,7 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
 
     _motors.set_lateral(cmd_lateral);          // Set lateral. To be used in output()
     _motors.set_forward(cmd_forward);          // Set forward
+    _motors.set_idle(enabled_rfc, _idle_on, cmd_idle);          // Set idle command. Idle JV
 
     /* static uint8_t counter = 0;         // Use to debug JV
     counter++;
