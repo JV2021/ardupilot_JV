@@ -493,6 +493,34 @@ float AC_AttitudeControl_Multi::thrust_model_br2212(float thrust_body)
     return (thrust_sign * cmd_0_to_1);
 } 
 
+// Converts Thrust (N) to a cmd from -1 to +1. For BA2310-1220Kv motor with APC 7x5E prop. RFC JV
+float AC_AttitudeControl_Multi::thrust_model_ba2310apc7x5(float thrust_body)
+{   // TODO JV: Compensate for voltage. More precise model than linear approximation.
+    float thrust_sign = 1.0f;
+    float max_cmd = 0.950f;         // Maximum command for BA2310-1220Kv with ESC Rebel V2 30A (PWM: 1950 microsec)
+    float min_cmd = 0.160f;        // Minimum command for BA2310-1220Kv with ESC Rebel V2 30A (PWM: 1160 microsec)
+    float thrust_max = 8.55f;       // Max thrust (N). Adjust for the -0.1 N offset in the data.
+    float thrust_min = 0.11f;       // Min thrust when spinning (N). Adjust for the -0.1 N offset in the data.
+    float cmd_0_to_1 = 0.0f;        // Initialization
+    float coeff_b = 1.599f;       // Quadratic approximation coefficient
+    float coeff_a = (thrust_max - thrust_min)/(max_cmd - min_cmd);
+
+    if ((thrust_body < thrust_min ) && (thrust_body > -thrust_min)) {
+        return cmd_0_to_1;
+
+    } else if (thrust_body < 0.0f) {
+        thrust_sign = -1.0f;
+
+    } else if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
+        return (max_cmd * thrust_sign);
+
+    }
+
+    cmd_0_to_1 = (thrust_sign * thrust_body + coeff_b) / coeff_a;         // Linear approximation of thrust to 0_to_1 (Normalization of PWM)
+
+    return (thrust_sign * cmd_0_to_1);
+}
+
 // Sets motor commands based on velocity target (latitude/longitude) from pilot. RFC JV
 void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude)
 {   // TODO JV: Delete the saturations since the conversion model thrust to (-1 to +1) already does it.
@@ -558,12 +586,12 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         cmd_body.y *= 1.0f / k_y;
 
         if (_idle_on) {                 // Idle thrust setting (N). Idle JV
-            cmd_idle = thrust_model_br2212(_idle_thrust);
+            cmd_idle = thrust_model_ba2310apc7x5(_idle_thrust);
         }
 
         // conversion from thrust (N) in body frame to -1 to +1 range
-        cmd_lateral = thrust_model_br2212(cmd_body.y);
-        cmd_forward = thrust_model_br2212(cmd_body.x);
+        cmd_lateral = thrust_model_ba2310apc7x5(cmd_body.y);
+        cmd_forward = thrust_model_ba2310apc7x5(cmd_body.x);
 
         /* Don't think I need it yet JV // This is meant to limit the net thrust by the PCS above the limit of a single thruster (7.45 N)
         if ((cmd_lateral * cmd_lateral + cmd_forward * cmd_forward) > 1.0f) {
