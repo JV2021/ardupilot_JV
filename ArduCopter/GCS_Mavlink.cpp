@@ -572,6 +572,11 @@ void GCS_MAVLINK_Copter::packetReceived(const mavlink_status_t &status,
     // pass message to follow library
     copter.g2.follow.handle_msg(msg);
 #endif
+
+    // Set which target to follow for the PCS. Hardcoded to 3. Follow JV
+    copter.g2.follow_pcs.set_target_sysid_pcs();
+    copter.g2.follow_pcs.handle_msg(msg);           // Follow JV
+
     GCS_MAVLINK::packetReceived(status, msg);
 }
 
@@ -715,6 +720,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_int_packet(const mavlink_command_i
         return handle_command_pause_continue(packet);
 
     default:
+        // Set which target to follow for the PCS. Hardcoded to 3. Follow JV
+        copter.g2.follow_pcs.set_target_sysid_pcs();
         return GCS_MAVLINK::handle_command_int_packet(packet);
     }
 }
@@ -989,6 +996,8 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_long_packet(const mavlink_command_
         return handle_command_pause_continue(packet_int);
     }
     default:
+        // Set which target to follow for the PCS. Hardcoded to 3. Follow JV
+        copter.g2.follow_pcs.set_target_sysid_pcs();
         return GCS_MAVLINK::handle_command_long_packet(packet);
     }
 }

@@ -389,6 +389,8 @@ struct PACKED log_PCS {
     float   pcs_pos_lon;
     float   pcs_vel_lat;
     float   pcs_vel_lon;
+    float   pcs_rf_lat;
+    float   pcs_rf_lon;
 };
 
 struct PACKED log_WheelEncoder {
@@ -752,11 +754,11 @@ struct PACKED log_VER {
 #define PID_UNITS  "s----------"
 #define PID_MULTS  "F----------"
 
-// Logging JV & see below stuff by searching PCS_FMT
-#define PCS_LABELS "TimeUS,Tar_lat,Tar_fwd,Tar_yaw,Pos_lat,Pos_lon,Vel_lat,Vel_lon"
-#define PCS_FMT    "Qfffffff"
-#define PCS_UNITS  "s-------"
-#define PCS_MULTS  "F-------"
+// CAUTION: There's a character limit. Logging JV & see below stuff by searching PCS_FMT
+#define PCS_LABELS "TimeUS,T_lat,T_fwd,T_yaw,P_lat,P_lon,V_lat,V_lon,RF_lat,RF_lon"
+#define PCS_FMT    "Qfffffffff"
+#define PCS_UNITS  "s---------"
+#define PCS_MULTS  "F---------"
 
 // @LoggerMessage: ADSB
 // @Description: Automatic Dependant Serveillance - Broadcast detected vehicle information

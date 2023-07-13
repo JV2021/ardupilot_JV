@@ -116,9 +116,10 @@
  # include <AC_PrecLand/AC_PrecLand.h>
  # include <AC_PrecLand/AC_PrecLand_StateMachine.h>
 #endif
-#if MODE_FOLLOW_ENABLED == ENABLED
+/* #if MODE_FOLLOW_ENABLED == ENABLED           // Comment out to avoid errors. Follow JV
  # include <AP_Follow/AP_Follow.h>
-#endif
+#endif */
+# include <AP_Follow/AP_Follow.h>           // Follow JV
 #if AC_FENCE == ENABLED
  # include <AC_Fence/AC_Fence.h>
 #endif

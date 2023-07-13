@@ -492,7 +492,7 @@ bool Mode::pcs_killswitch()
     float rc_fail_time_sec = 2.0f;                               // Transfer to parameter. JV
     static uint8_t counter = 1;
 
-    if (killswitch >= 1200.0f || ( rc_fail_time_sec > 0 &&
+    if (killswitch >= 1200.0f || ( rc_fail_time_sec > 0.0f &&
             (AP_HAL::millis() - last_valid_rc_msg) > (rc_fail_time_sec * 1000.0f))) {
         if (counter <= 10) {
             counter++;
