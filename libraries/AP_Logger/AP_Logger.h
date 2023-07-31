@@ -356,6 +356,15 @@ public:
 
     void Write_PCS(uint8_t msg_type, const PCS_Info &infopcs);       // Logging JV
 
+    struct PCS_Other {         // Logging JV
+        float pcs_tar_yaw;
+        float pcs_ayaw_plt;
+        float pcs_ayaw_pos;
+        float pcs_ayaw_der;
+    };
+
+    void Write_PCSO(uint8_t msg_type, const PCS_Other &otherpcs);       // Logging JV
+
     // returns true if logging of a message should be attempted
     bool should_log(uint32_t mask) const;
 

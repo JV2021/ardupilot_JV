@@ -55,6 +55,6 @@ void ModeStabilize::run()
 
     // call attitude controller. Will need to call my controller JV
     // attitude_control->pcs_manual_bypass(target_lateral, target_forward, target_yaw_rate);
-    attitude_control->pcs_rf_controller( enabled_pcs_rfc, target_forward, target_lateral, dist_vec_tar_ned);      // forward = latitude (North), lateral = longitude (East)
-    attitude_control->pcs_auto_yaw(auto_yaw_ON, target_yaw_rate);
+    attitude_control->pcs_rf_controller( enabled_pcs_rfc, target_forward, target_lateral, dist_vec_tar_ned, auto_yaw_ON, target_yaw_rate);      // forward = latitude (North), lateral = longitude (East)
+    // attitude_control->pcs_auto_yaw(auto_yaw_ON, target_yaw_rate);
     }

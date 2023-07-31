@@ -445,6 +445,20 @@ void AP_Logger::Write_PCS(uint8_t msg_type, const PCS_Info &infopcs)
     WriteBlock(&pkt, sizeof(pkt));
 }
 
+// Logging JV
+void AP_Logger::Write_PCSO(uint8_t msg_type, const PCS_Other &otherpcs)
+{
+    const struct log_PCS_other pkt{
+        LOG_PACKET_HEADER_INIT(msg_type),
+        time_us              : AP_HAL::micros64(),
+        pcs_tar_yaw          : otherpcs.pcs_tar_yaw,
+        pcs_ayaw_plt         : otherpcs.pcs_ayaw_plt,
+        pcs_ayaw_pos         : otherpcs.pcs_ayaw_pos,
+        pcs_ayaw_der         : otherpcs.pcs_ayaw_der,
+    };
+    WriteBlock(&pkt, sizeof(pkt));
+}
+
 void AP_Logger::Write_RPM(const AP_RPM &rpm_sensor)
 {
     float rpm1 = -1, rpm2 = -1;

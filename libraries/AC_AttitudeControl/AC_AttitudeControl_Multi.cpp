@@ -234,9 +234,9 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     AP_GROUPINFO("THR_MIX_MAN", 6, AC_AttitudeControl_Multi, _thr_mix_man, AC_ATTITUDE_CONTROL_MAN_DEFAULT),
 
     // @Param: ayaw_P
-    // @DisplayName: PCS yaw controller proportional gain in sec/rad
+    // @DisplayName: PCS yaw controller proportional gain on angular position error in 1/rad
     // @Description: P Gain which produces an output value that is proportional to the current error value
-    // @Range: 0.1 1.0
+    // @Range: 0.0 1.0
     // @User: Advanced
     AP_GROUPINFO("ayaw_P", 7, AC_AttitudeControl_Multi, _ayaw_kp, AC_ATTITUDE_CONTROL_ayaw_kp_DEFAULT),
 
@@ -281,6 +281,27 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
 	// @Range: 0.0 0.5
 	// @User: Advanced
 	AP_GROUPINFO("idle_thrust", 17, AC_AttitudeControl_Multi, _idle_thrust, AC_ATTITUDE_CONTROL_idle_thrust_DEFAULT),
+
+    // @Param: ayaw_D
+    // @DisplayName: PCS yaw controller proportional gain on the derivative of the angular position error in s/rad
+    // @Description: D Gain which produces an output value that is proportional to the derivative of the error value
+    // @Range: 0.0 3.0
+    // @User: Advanced
+    AP_GROUPINFO("ayaw_D", 18, AC_AttitudeControl_Multi, _ayaw_kd, AC_ATTITUDE_CONTROL_ayaw_kd_DEFAULT),
+
+    // @Param: side_force
+	// @DisplayName: Norm of rotating side force N
+	// @Description: Norm of rotating side force N
+	// @Range: 0.0 10.0
+	// @User: Advanced
+	AP_GROUPINFO("side_force", 19, AC_AttitudeControl_Multi, _side_force, AC_ATTITUDE_CONTROL_side_force_DEFAULT),
+
+    // @Param: ayaw_off
+    // @DisplayName: PCS yaw heading offset in deg
+    // @Description: PCS yaw heading offset in deg
+    // @Range: 0.0 359.0
+    // @User: Advanced
+    AP_GROUPINFO("ayaw_off", 20, AC_AttitudeControl_Multi, _ayaw_off, AC_ATTITUDE_CONTROL_ayaw_off_DEFAULT),
 
     AP_GROUPEND
 };          // PCS new parameters were added at the end. Param JV
@@ -433,38 +454,30 @@ void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forwa
     } */
 }
 
-// Set a yaw command based on the angular velocity from gyros. Ayaw JV
+// Set a yaw command based only on the angular velocity from gyros. Ayaw JV
 void AC_AttitudeControl_Multi::pcs_auto_yaw(bool enabled_auto_yaw, float yaw_rate_temp2)
-{   // TODO JV: Read heading and determine a correction
-    float target_yaw_rate = yaw_rate_temp2 * _ayaw_plt;       // I want pilot input as target in the range -1.571 ~ +1.571 rad/s
+{   // TODO JV: Replace ayaw_kp_vel by a parameter.
+    float target_yaw_rate = yaw_rate_temp2 * _ayaw_plt;        // I want pilot input as target in the range -1.571 ~ +1.571 rad/s
     float angular_speed_z = _ahrs.get_gyro_latest().z;         // Gyros smoothed angular velocity in yaw (rad/s)
-    // float kp = 0.4f;            // Proportional gain. To remove JV
-    float cmd_yaw = 0.0f;          // yaw command
+    float cmd_yaw = 0.0f;                                      // yaw command
+    float ayaw_kp_vel = 0.4f;                                      // Temporary gain for angular velocity error term
 
     if (enabled_auto_yaw && ((angular_speed_z * angular_speed_z) <= 625.0f ))   // Second condition is a safety if angular speed in yaw exceeds 25 rad/s
     {
-        cmd_yaw = _ayaw_kp * (target_yaw_rate - angular_speed_z);     // Proportional yaw_rate controller
+        cmd_yaw = ayaw_kp_vel * (target_yaw_rate - angular_speed_z);     // Proportional yaw_rate controller
 
         if (cmd_yaw > 1.0f) {
             cmd_yaw = 1.0f;
         } else if (cmd_yaw < -1.0f) {
                     cmd_yaw = -1.0f;
                 }
-    } else
-    {
+    } else {
         cmd_yaw = 0.0f;
     }
 
     _pcscmd.pcs_tar_yaw = cmd_yaw;          // Logging JV
 
     _motors.set_yaw(cmd_yaw);           // Set yaw command
-
-    /* static uint8_t counter = 0;         // Use to debug JV
-    counter++;
-    if (counter > 50) {
-        counter = 0;
-        gcs().send_text(MAV_SEVERITY_CRITICAL, "yaw= %5.3f", (float)_motors.get_yaw());
-    } */
 }
 
 // Converts Thrust (N) to a cmd from -1 to +1. For BR2212 motor with 1045 prop. RFC JV
@@ -521,12 +534,13 @@ float AC_AttitudeControl_Multi::thrust_model_ba2310apc7x5(float thrust_body)
     return (thrust_sign * cmd_0_to_1);
 }
 
-// Sets motor commands based on velocity target (latitude/longitude) from pilot. RFC JV
-void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, Vector3f dist_vec_tar_ned)
-{   // TODO JV: Delete the saturations since the conversion model thrust to (-1 to +1) already does it. Add side force terms (cmd_body). Add side force as parameter.
+// Sets motor commands based on velocity target (latitude/longitude) from pilot. RFC JV , Ayaw JV
+void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, Vector3f dist_vec_tar_ned, bool enabled_auto_yaw, float yaw_pilot)
+{   // TODO JV: Delete the saturations since the conversion model thrust to (-1 to +1) already does it. Implement a low-pass filter (for derivative of error?.
 
+    // Variable initialization
     Vector3f vel_inertial; //_inav->get_velocity();    // Velocity in inertial frame (NED). Latitude, Longitude, Vertical down  (m/s)
-    float cmd_vel_latitude = 0.0f;          // latitude command
+    float cmd_vel_latitude = 0.0f;           // latitude command
     float cmd_vel_longitude = 0.0f;          // longitude command
     float cmd_lateral;                       // Lateral command
     float cmd_forward;                       // Forward command
@@ -540,9 +554,34 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     Vector3f vect_k_y;                  // Initially in XYZ body referential
     Vector3f vect_x_NED;
     Vector3f vect_y_NED;
-    float cmd_idle = 0.0f;           // Idle thrust setter (N)
-    float side_force = 5.5f;         // Norm of the side force of constant norm and changing orientation (N)
-    Vector2f cmd_rf;            // Command: side force of constant norm and changing orientation North-East (N)
+    float cmd_idle = 0.0f;              // Idle thrust setter (N)
+    // float side_force = 5.5f;            // Norm of the side force of constant norm and changing orientation (N)
+    Vector2f cmd_rf;                    // Command: side force of constant norm and changing orientation North-East (N)
+
+    // Variable initialization Autoyaw. NOTE: Autoyaw calculations are done in the NED reference frame. Not sure if the yaw controller will work if the PCS is upside-down.
+    float angular_speed_z = _ahrs.get_gyro_latest().z;            // Gyros smoothed angular velocity in yaw (rad/s)
+    float cmd_der_yaw = 0.0f;                                     // Derivative of angular position error term of yaw command
+    float cmd_pos_yaw = 0.0f;                                     // Angular position error term of yaw command
+    float cmd_plt_yaw = 0.0f;                                     // Pilot command for yaw 
+    float cmd_yaw = 0.0f;                                         // yaw command
+    Vector2f u_d_to_p;                                            // Position unit vector from aircraft (drone) to PCS 
+    float ang_N_u_d_to_p = 0.0f;                                  // Angle in between the North unit vector and u_drone_to_pcs unit vector (rad)
+    float yaw_offset = radians(_ayaw_off);                            // Yaw offset in orientation following (rad) 
+    float yaw_dir = 0.0f;                                         // Yaw rotation desired direction in regard to the XYZ body reference frame
+    Vector3f heading_body;                                        // Yaw heading vector considering the yaw offset parameter in the body reference frame
+    heading_body.x = cosf(yaw_offset); heading_body.y = sinf(yaw_offset); heading_body.z = 0.0f;
+    heading_body = rot_body_to_NED * heading_body;
+    Vector3f heading_ned = Vector3f(heading_body.x, heading_body.y, 0.0f);   // Yaw heading unit vector considering the yaw offset parameter in the NED reference frame (Down component is null)
+    heading_ned.x = heading_ned.x / safe_sqrt(heading_ned.x * heading_ned.x + heading_ned.y * heading_ned.y + heading_ned.z * heading_ned.z);
+    heading_ned.y = heading_ned.y / safe_sqrt(heading_ned.x * heading_ned.x + heading_ned.y * heading_ned.y + heading_ned.z * heading_ned.z);
+    const float dt = AP::scheduler().get_loop_period_s();         // Period of the loop (s)
+    static bool reset_yaw_ctrl = true;                                          // Boolean to reset derivative related terms of the yaw controller    
+
+    if (enabled_auto_yaw && ((angular_speed_z * angular_speed_z) <= 625.0f )) {         // Second condition is a safety if angular speed in yaw exceeds 25 rad/s
+        cmd_plt_yaw = _ayaw_plt * yaw_pilot;     // Proportional gain on pilot command
+    } else {
+        cmd_plt_yaw = 0.0f;
+    }
 
     if (enabled_rfc) {
         if (_ahrs.get_velocity_NED(vel_inertial)) {
@@ -559,8 +598,41 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
             cmd_pos.y = -_rfc_pos_kp * home_xy.y;           // Position target is the home position (0,0)
 
             if ((dist_vec_tar_ned.x != 0.0f) && (dist_vec_tar_ned.y != 0.0f)) {
-                cmd_rf.x = side_force * (home_xy.x - dist_vec_tar_ned.x) / safe_sqrt( (home_xy.x - dist_vec_tar_ned.x) * (home_xy.x - dist_vec_tar_ned.x) + (home_xy.y - dist_vec_tar_ned.y) * (home_xy.y - dist_vec_tar_ned.y) );
-                cmd_rf.y = side_force * (home_xy.y - dist_vec_tar_ned.y) / safe_sqrt( (home_xy.x - dist_vec_tar_ned.x) * (home_xy.x - dist_vec_tar_ned.x) + (home_xy.y - dist_vec_tar_ned.y) * (home_xy.y - dist_vec_tar_ned.y) );
+                // We are only interested by the horizontal orientation of drone to PCS vector.
+                u_d_to_p.x = (home_xy.x - dist_vec_tar_ned.x) / safe_sqrt( (home_xy.x - dist_vec_tar_ned.x) * (home_xy.x - dist_vec_tar_ned.x) + (home_xy.y - dist_vec_tar_ned.y) * (home_xy.y - dist_vec_tar_ned.y) );
+                u_d_to_p.y = (home_xy.y - dist_vec_tar_ned.y) / safe_sqrt( (home_xy.x - dist_vec_tar_ned.x) * (home_xy.x - dist_vec_tar_ned.x) + (home_xy.y - dist_vec_tar_ned.y) * (home_xy.y - dist_vec_tar_ned.y) );
+
+                cmd_rf.x = _side_force * u_d_to_p.x;
+                cmd_rf.y = _side_force * u_d_to_p.y;
+                
+                if (enabled_auto_yaw) {
+                    ang_N_u_d_to_p = acosf(heading_ned.x * -1.0f * u_d_to_p.x + heading_ned.y * -1.0f * u_d_to_p.y);      // We inverse u_d_to_p vector and then find the angle via dot product formula
+                    yaw_dir = u_d_to_p.y * heading_ned.x - u_d_to_p.x * heading_ned.y;         // We inverse u_d_to_p vector and then find the rotation direction via cross product simplified formula
+                    
+                    if (yaw_dir > 0.0f) {       // We need to inverse the desired rotation direction so that the angular orientation error (ang_N_u_d_to_p) becomes null as the vectors are aligned. 
+                        yaw_dir = -1.0f;
+                    } else if (yaw_dir < 0.0f) {
+                        yaw_dir = 1.0f;
+                    }
+                    cmd_pos_yaw = _ayaw_kp * ang_N_u_d_to_p * yaw_dir;     // Proportional yaw_rate controller on angular position relative to aircraft
+
+                    if (reset_yaw_ctrl) {
+                        reset_yaw_ctrl = false;
+                        _error = ang_N_u_d_to_p * yaw_dir;
+                    } else {
+                        float error_last = _error;                             // Angular position error during previous loop (rad)
+                        _error = ang_N_u_d_to_p * yaw_dir;
+
+                        if (dt > 0.0f) {
+                            float derivative = (_error - error_last) / dt;     // Derivative of the angular position error (rad/s)
+                            cmd_der_yaw = _ayaw_kd * derivative;
+                        }
+                    }
+
+                } else {
+                    cmd_pos_yaw = 0.0f;
+                    cmd_der_yaw = 0.0f;
+                }
                 /* static uint8_t counter = 0;         // Debug JV
                 counter++;
                 if (counter > 200) {
@@ -580,8 +652,8 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         }
 
         // conversion from NED to body frame (lateral/forward/yaw axes)
-        cmd_body.x = cmd_vel_latitude + cmd_pos.x;              // (North). Add cmd_rf.x
-        cmd_body.y = cmd_vel_longitude + cmd_pos.y;             // (East). Add cmd_rf.y
+        cmd_body.x = cmd_vel_latitude + cmd_pos.x + cmd_rf.x;              // (North). Add cmd_rf.x
+        cmd_body.y = cmd_vel_longitude + cmd_pos.y + cmd_rf.y;             // (East). Add cmd_rf.y
         cmd_body.z = 0.0f;                                      // (Down)
         cmd_body = rot_body_to_NED.mul_transpose(cmd_body);     // NED -> XYZ (forward/right/down) (Newtons)
 
@@ -635,9 +707,22 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         cmd_forward = 0.0f;
     }
 
+    if (enabled_auto_yaw && ((angular_speed_z * angular_speed_z) <= 625.0f )) {         // Second condition is a safety if angular speed in yaw exceeds 25 rad/s
+        cmd_yaw = cmd_der_yaw + cmd_pos_yaw + cmd_plt_yaw;            // PD controller on angular position relative to aircraft + pilot command (-1 to +1)
+    } else {
+        cmd_yaw = 0.0f;
+    }
+    
+    if (cmd_yaw > 1.0f) {
+            cmd_yaw = 1.0f;
+    } else if (cmd_yaw < -1.0f) {
+        cmd_yaw = -1.0f;
+    }
+
     // Logging JV
     _pcscmd.pcs_tar_lat = cmd_lateral;
     _pcscmd.pcs_tar_fwd = cmd_forward;
+    _pcscmd.pcs_tar_yaw = cmd_yaw;
     _pcscmd.pcs_pos_lat = cmd_pos.x;
     _pcscmd.pcs_pos_lon = cmd_pos.y;
     _pcscmd.pcs_vel_lat = cmd_vel_latitude;
@@ -645,8 +730,14 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     _pcscmd.pcs_rf_lat = cmd_rf.x;
     _pcscmd.pcs_rf_lon = cmd_rf.y;
 
-    _motors.set_lateral(cmd_lateral);          // Set lateral. To be used in output()
-    _motors.set_forward(cmd_forward);          // Set forward
+    _pcsoth.pcs_tar_yaw = cmd_yaw;                              // Target yaw (-1 to  +1)
+    _pcsoth.pcs_ayaw_plt = cmd_plt_yaw;                         // Pilot command
+    _pcsoth.pcs_ayaw_pos = cmd_pos_yaw;                         // Angular position error
+    _pcsoth.pcs_ayaw_der = cmd_der_yaw;                         // Derivative of angular position error
+
+    _motors.set_lateral(cmd_lateral);                           // Set lateral. To be used in output()
+    _motors.set_forward(cmd_forward);                           // Set forward
+    _motors.set_yaw(cmd_yaw);                                   // Set yaw command
     _motors.set_idle(enabled_rfc, _idle_on, cmd_idle);          // Set idle command. Idle JV
 
     /* static uint8_t counter = 0;         // Use to debug JV

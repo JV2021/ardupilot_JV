@@ -47,11 +47,14 @@
 #define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT             0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 
 // Param JV
-#define AC_ATTITUDE_CONTROL_ayaw_kp_DEFAULT             0.4f        // Yaw controller proportional gain in sec/rad
+#define AC_ATTITUDE_CONTROL_ayaw_kp_DEFAULT             0.15f       // Yaw controller proportional gain in 1/rad
+#define AC_ATTITUDE_CONTROL_ayaw_kd_DEFAULT             0.2f        // Yaw controller derivative gain in sec/rad
 #define AC_ATTITUDE_CONTROL_ayaw_plt_DEFAULT            1.571f      // Pilot input proportional gain in rad/sec
+#define AC_ATTITUDE_CONTROL_ayaw_off_DEFAULT            45.0f       // Yaw heading offset (deg)
 #define AC_ATTITUDE_CONTROL_rfc_vel_plt_DEFAULT         2.0f        // Rotating force controller velocity pilot input scaler in m/s
 #define AC_ATTITUDE_CONTROL_rfc_vel_kp_DEFAULT          6.0f        // Rotating force controller velocity gain N*s/m
 #define AC_ATTITUDE_CONTROL_rfc_pos_kp_DEFAULT          3.0f        // Rotating force controller position gain N/m
+#define AC_ATTITUDE_CONTROL_side_force_DEFAULT          0.0f        // Norm of the rotating side force (N)
 #define AC_ATTITUDE_CONTROL_idle_on_DEFAULT               0         // Motor idling parameter ON/OFF 0 or 1
 #define AC_ATTITUDE_CONTROL_idle_thrust_DEFAULT         0.0f        // Motor idling thrust 0.0 0.5 N
 

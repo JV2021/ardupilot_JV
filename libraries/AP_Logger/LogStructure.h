@@ -393,6 +393,16 @@ struct PACKED log_PCS {
     float   pcs_rf_lon;
 };
 
+// Logging JV
+struct PACKED log_PCS_other {
+    LOG_PACKET_HEADER;
+    uint64_t time_us;
+    float   pcs_tar_yaw;
+    float   pcs_ayaw_plt;
+    float   pcs_ayaw_pos;
+    float   pcs_ayaw_der;
+};
+
 struct PACKED log_WheelEncoder {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -759,6 +769,12 @@ struct PACKED log_VER {
 #define PCS_FMT    "Qfffffffff"
 #define PCS_UNITS  "s---------"
 #define PCS_MULTS  "F---------"
+
+// CAUTION: There's a character limit. Logging JV & see below stuff by searching PCSO_FMT
+#define PCSO_LABELS "TimeUS,T_yaw,AY_plt,AY_pos,AY_der"
+#define PCSO_FMT    "Qffff"
+#define PCSO_UNITS  "s----"
+#define PCSO_MULTS  "F----"
 
 // @LoggerMessage: ADSB
 // @Description: Automatic Dependant Serveillance - Broadcast detected vehicle information
@@ -1292,7 +1308,7 @@ struct PACKED log_VER {
 // @Field: ThrAvMx: Maximum average throttle that can be used to maintain attitude controll, derived from throttle mix params
 // @Field: FailFlags: bit 0 motor failed, bit 1 motors balanced, should be 2 in normal flight
 
-// messages for all boards      // See below for PCSC. Logging JV
+// messages for all boards      // See below for PCSC, PCSO. Logging JV
 #define LOG_COMMON_STRUCTURES \
     { LOG_FORMAT_MSG, sizeof(log_Format), \
       "FMT", "BBnNZ",      "Type,Length,Name,Format,Columns", "-b---", "-----" },    \
@@ -1362,6 +1378,8 @@ LOG_STRUCTURE_FROM_ESC_TELEM \
       "PIDY", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PCSCMD_MSG, sizeof(log_PCS), \
       "PCSC", PCS_FMT,  PCS_LABELS, PCS_UNITS, PCS_MULTS }, \
+    { LOG_PCSOTH_MSG, sizeof(log_PCS_other), \
+      "PCSO", PCSO_FMT,  PCSO_LABELS, PCSO_UNITS, PCSO_MULTS }, \
     { LOG_PIDA_MSG, sizeof(log_PID), \
       "PIDA", PID_FMT,  PID_LABELS, PID_UNITS, PID_MULTS , true }, \
     { LOG_PIDS_MSG, sizeof(log_PID), \
@@ -1501,6 +1519,7 @@ enum LogMessages : uint8_t {
     LOG_MOTBATT_MSG,
     LOG_VER_MSG,
     LOG_PCSCMD_MSG,     // Logging JV
+    LOG_PCSOTH_MSG,     // Logging JV
 
     _LOG_LAST_MSG_
 };

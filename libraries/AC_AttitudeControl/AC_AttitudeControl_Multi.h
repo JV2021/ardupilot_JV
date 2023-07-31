@@ -52,6 +52,7 @@ public:
     AC_PID& get_rate_pitch_pid() override { return _pid_rate_pitch; }
     AC_PID& get_rate_yaw_pid() override { return _pid_rate_yaw; }
     const AP_Logger::PCS_Info& get_pcscmd_info(void) const { return _pcscmd; }     // Logging JV
+    const AP_Logger::PCS_Other& get_pcs_other(void) const { return _pcsoth; }      // Logging JV
 
     // Update Alt_Hold angle maximum
     void update_althold_lean_angle_max(float throttle_in) override;
@@ -89,7 +90,8 @@ public:
     // Converts thrust (N) in body frame to a motor command BA2310-1220Kv & APC7x5E(-1 to +1). RFC JV
     float thrust_model_ba2310apc7x5(float thrust_body);
 
-    void pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, Vector3f dist_vec_tar_ned);     // Rotating force controller. RFC JV
+    // Rotating force controller + Yaw heading following. RFC JV , Ayaw JV
+    void pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, Vector3f dist_vec_tar_ned, bool enabled_auto_yaw, float yaw_pilot);
 
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
@@ -99,6 +101,7 @@ public:
 
 private:
     AP_Logger::PCS_Info _pcscmd;          // Logging JV
+    AP_Logger::PCS_Other _pcsoth;
 
 protected:
 
@@ -118,11 +121,20 @@ protected:
     AP_Float              _thr_mix_max;     // throttle vs attitude control prioritisation used during active flight (higher values mean we prioritise attitude control over throttle)
     
     // PCS parameters. Param JV
-    AP_Float              _ayaw_kp;         // Yaw controller proportional gain in sec/rad
+    AP_Float              _ayaw_kp;         // Yaw controller proportional gain in 1/rad
+    AP_Float              _ayaw_kd;         // Yaw controller derivative gain in s/rad
     AP_Float              _ayaw_plt;        // Pilot input proportional gain in rad/sec (eventually desired heading)
-    AP_Float              _rfc_vel_plt;   // Rotating force controller pilot input scaler (m/s)
-    AP_Float              _rfc_vel_kp;    // Rotating force controller velocity kp (N*s/m)
-    AP_Float              _rfc_pos_kp;    // Rotating force controller position kp (N/m)
-    AP_Int8               _idle_on;       // Motor idling parameter 0 or 1 
-    AP_Float              _idle_thrust;   // Motor idling thrust parameter 0.0 to 0.5 (N)
+    AP_Float              _ayaw_off;        // Yaw heading offset (deg)
+    AP_Float              _rfc_vel_plt;     // Rotating force controller pilot input scaler (m/s)
+    AP_Float              _rfc_vel_kp;      // Rotating force controller velocity kp (N*s/m)
+    AP_Float              _rfc_pos_kp;      // Rotating force controller position kp (N/m)
+    AP_Float              _side_force;      // Norm of the rotating side force (N)
+    AP_Int8               _idle_on;         // Motor idling parameter 0 or 1 
+    AP_Float              _idle_thrust;     // Motor idling thrust parameter 0.0 to 0.5 (N)
+    
+    // PCS global variables
+    // float                 _dt;              // timestep in seconds
+    float                 _error;           // Angular position error value during previous loop
+    // float                 _derivative;      // derivative value
+
 };
