@@ -195,7 +195,7 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_with_offs, Vector3f &vel_ned)
 { // TODO JV: Implement a second correction for a delay in the reception of the infos from the target? Follow JV
 
-    float dist_max_pcs = 21.5f;             // Constant to replace _dist_max parameter. 21.5 m gives an angle of 45 ° for a tether of 30.35 m.
+    // Comment out because problematic float dist_max_pcs = 50.0f;             // Constant to replace _dist_max parameter. 21.5 m gives an angle of 45 ° for a tether of 30.35 m.
     // get our location
     Location current_loc;
     if (!AP::ahrs().get_location(current_loc)) {
@@ -219,7 +219,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
     // calculate difference
     const Vector3f dist_vec = current_loc.get_distance_NED(target_loc);
 
-    // fail if too far
+    /* Comment out because it is problematic with a long cable // fail if too far
     if (dist_vec.length() > dist_max_pcs) {         // Changed the if argument. Follow JV
         static uint8_t counter = 0;         // Use to debug JV
         counter++;
@@ -229,7 +229,7 @@ bool AP_Follow::get_target_dist_and_vel_ned(Vector3f &dist_ned, Vector3f &dist_w
         } 
         clear_dist_and_bearing_to_target();
         return false;
-    }
+    } */
 
     // initialise offsets from distance vector if required
     // init_offsets_if_required(dist_vec);          // Comment out. Don't need it.
