@@ -284,26 +284,23 @@ void AP_MotorsMulticopter::output_pcs()         // Added this JV
         forward_factorAP[i] = get_forward_factor(i);
         yaw_factorAP[i] = get_yaw_factorpcs(i);
 
-        if ((motor_enabled[i]) && (((lateral_thrust * lateral_factorAP[i]) > 0.0f) || ((forward_thrust * forward_factorAP[i]) > 0.0f) || ((yaw_thrust * yaw_thrust * yaw_factorAP[i]) <= 1.0f) )) {     // Added the second condition JV
+        if ((motor_enabled[i]) && (((lateral_thrust * lateral_factorAP[i]) > 0.0f) || ((forward_thrust * forward_factorAP[i]) > 0.0f) || ((yaw_thrust * yaw_factorAP[i]) > 0.0f) )) {     // Added the second condition JV
             // calculate the thrust outputs for lateral, forward and yaw
-            _thrust_lfy_outAP[i] = (lateral_thrust * lateral_factorAP[i] + forward_thrust * forward_factorAP[i] + (yaw_thrust / 4.0f + 0.5f ) * yaw_factorAP[i]); // Range 0.25~0.75 for yaw. yaw_factorAP must be positive. Added this JV            
+            _thrust_lfy_outAP[i] = (lateral_thrust * lateral_factorAP[i] + forward_thrust * forward_factorAP[i] + yaw_thrust * yaw_factorAP[i]);     
             // I may need to add an upper limit to 1.0f to _thrust_rpyt_out for safety JV
-        } else if (yaw_factorAP[i]) {    // Caution! Yaw factor must be 0 or 1 JV
-            // This is a null command for the yaw prop (safety command)
-            _thrust_lfy_outAP[i] = 0.5f;
         } else {            
-            // This is a null command for the lateral/forward props (safety command)
+            // This is a null command for the lateral/forward/yaw props (safety command)
             _thrust_lfy_outAP[i] = 0.0f;
         }
 
-        if ( _rfc_is_on && _idle_is_on && (_thrust_lfy_outAP[i] <= _idle_cmd) && (((lateral_factorAP[i] * lateral_factorAP[i]) > 0.0f) || ((forward_factorAP[i] * forward_factorAP[i]) > 0.0f))) {      // Idle JV
+        if ( _rfc_is_on && _idle_is_on && (_thrust_lfy_outAP[i] <= _idle_cmd) && (((forward_factorAP[i] * forward_factorAP[i]) > 0.0f) || ((yaw_factorAP[i] * yaw_factorAP[i]) > 0.0f))) {      // Idle for forward and yaw props Idle JV
                 _thrust_lfy_outAP[i] = _idle_cmd;
         }
     }
 
     uint8_t j;
     // Convert output int the range 0~1 to PWM and send to each motor. It is separate from the other loop to avoid 
-    // the calculation time. Therefore, the commands are written with a really small delay
+    // the calculation time. Therefore, the commands are written within a really small delay
     for (j = 0; j < AP_MOTORS_MAX_NUM_MOTORS; j++) {
         if (motor_enabled[j]) {
             rc_write(j, output_to_pwm(_thrust_lfy_outAP[j]));

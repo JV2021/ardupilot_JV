@@ -162,13 +162,13 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
     float time_since_update = 0.0f;
     // check for timeout
     if ((_last_location_update_ms == 0) || (AP_HAL::millis() - _last_location_update_ms > AP_FOLLOW_TIMEOUT_MS)) {
-        time_since_update = AP_HAL::millis() - _last_location_update_ms;
+        time_since_update = (AP_HAL::millis() - _last_location_update_ms) / 1000.0f;            // Time in seconds
         // Use to debug JV 
-        static uint8_t counter = 0;         // Use to debug JV
+        static uint16_t counter = 0;         // Use to debug JV
         counter++;
-        if (counter > 200) {
+        if (counter > 1200) {
             counter = 0;
-            gcs().send_text(MAV_SEVERITY_CRITICAL, "TIMEOUT= %5.3f", (float)time_since_update);
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "Time since last update = %5.3f s", (float)time_since_update);
         } 
         return false;
     }
@@ -185,6 +185,13 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
     Location last_loc = _target_location;
     last_loc.offset(vel_ned.x * dt, vel_ned.y * dt);
     last_loc.alt -= vel_ned.z * 100.0f * dt; // convert m/s to cm/s, multiply by dt.  minus because NED
+
+    static uint16_t counter2 = 0;         // Use to debug JV
+    counter2++;
+    if (counter2 > 1200) {
+        counter2 = 0;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "Receiving data from target with a SYSID = 3");
+    }
 
     // return latest position estimate
     loc = last_loc;

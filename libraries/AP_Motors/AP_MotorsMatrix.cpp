@@ -818,12 +818,13 @@ void AP_MotorsMatrix::setup_motors(motor_frame_class frame_class, motor_frame_ty
             _mav_type = MAV_TYPE_HEXAROTOR;
             switch (frame_type) {
                 case MOTOR_FRAME_TYPE_PLUS: {
-                    _frame_type_string = "PLUS";            // PCS config. Caution! 1) yaw_factor must be 0 or 1. 2) Don't add a yaw contribution if a motor is mostly lateral/forward --> see Idle JV
-                    add_motor_raw_pcs(AP_MOTORS_MOT_1, 0.0f, 0.0f,  0.0f, 1, 0.0f,  0.000f, -1.000f);
-                    add_motor_raw_pcs(AP_MOTORS_MOT_2, 0.0f, 0.0f,  0.0f, 2, 0.0f, -1.000f,  0.000f);
-                    add_motor_raw_pcs(AP_MOTORS_MOT_3, 0.0f, 0.0f,  0.0f, 3, 0.0f,  0.000f,  1.000f);
-                    add_motor_raw_pcs(AP_MOTORS_MOT_4, 0.0f, 0.0f,  0.0f, 4, 0.0f,  1.000f,  0.000f);
-                    add_motor_raw_pcs(AP_MOTORS_MOT_5, 0.0f, 0.0f,  1.0f, 5, 0.0f,  0.000f,  0.000f);
+                    _frame_type_string = "PLUS";            // PCS config. Caution! 1) Factors must be -1.0f, 0.0f or 1.0f. 2) Don't add a yaw contribution if a motor is mostly lateral/forward --> see Idle JV
+                    add_motor_raw_pcs(AP_MOTORS_MOT_1, 0.0f, 0.0f,  0.0f, 1, 0.0f,  0.0f,  1.0f);   // Longitudinal prop, battery side
+                    add_motor_raw_pcs(AP_MOTORS_MOT_2, 0.0f, 0.0f, -1.0f, 2, 0.0f,  0.0f,  0.0f);   // TR GPS side
+                    add_motor_raw_pcs(AP_MOTORS_MOT_3, 0.0f, 0.0f,  0.0f, 3, 0.0f,  0.0f, -1.0f);   // Longitudinal prop, TR side
+                    add_motor_raw_pcs(AP_MOTORS_MOT_4, 0.0f, 0.0f,  1.0f, 4, 0.0f,  0.0f,  0.0f);   // TR other side
+                    add_motor_raw_pcs(AP_MOTORS_MOT_5, 0.0f, 0.0f,  0.0f, 5, 0.0f, -1.0f,  0.0f);   // Main prop
+                    add_motor_raw_pcs(AP_MOTORS_MOT_6, 0.0f, 0.0f,  0.0f, 6, 0.0f, -1.0f,  0.0f);   // Main prop
                     /* Comment out JV static const AP_MotorsMatrix::MotorDef motors[] {
                         {    0, AP_MOTORS_MATRIX_YAW_FACTOR_CW,   1 },
                         {  180, AP_MOTORS_MATRIX_YAW_FACTOR_CCW,  4 },

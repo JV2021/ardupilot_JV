@@ -508,14 +508,14 @@ float AC_AttitudeControl_Multi::thrust_model_br2212(float thrust_body)
 
 // Converts Thrust (N) to a cmd from -1 to +1. For BA2310-1220Kv motor with APC 7x5E prop. RFC JV
 float AC_AttitudeControl_Multi::thrust_model_ba2310apc7x5(float thrust_body)
-{   // TODO JV: Compensate for voltage. More precise model than linear approximation.
+{   // TODO JV: Compensate for voltage.
     float thrust_sign = 1.0f;
     float max_cmd = 0.950f;         // Maximum command for BA2310-1220Kv with ESC Rebel V2 30A (PWM: 1950 microsec)
     float min_cmd = 0.160f;        // Minimum command for BA2310-1220Kv with ESC Rebel V2 30A (PWM: 1160 microsec)
     float thrust_max = 8.55f;       // Max thrust (N). Adjust for the -0.1 N offset in the data.
     float thrust_min = 0.11f;       // Min thrust when spinning (N). Adjust for the -0.1 N offset in the data.
     float cmd_0_to_1 = 0.0f;        // Initialization
-    float coeff_b = 1.599f;       // Quadratic approximation coefficient
+    float coeff_b = -1.599f;       // Linear approximation coefficient
     float coeff_a = (thrust_max - thrust_min)/(max_cmd - min_cmd);
 
     if ((thrust_body < thrust_min ) && (thrust_body > -thrust_min)) {
@@ -529,21 +529,78 @@ float AC_AttitudeControl_Multi::thrust_model_ba2310apc7x5(float thrust_body)
 
     }
 
-    cmd_0_to_1 = (thrust_sign * thrust_body + coeff_b) / coeff_a;         // Linear approximation of thrust to 0_to_1 (Normalization of PWM)
+    cmd_0_to_1 = (thrust_sign * thrust_body - coeff_b) / coeff_a;         // Linear approximation of thrust to 0_to_1 (Normalization of PWM)
 
     return (thrust_sign * cmd_0_to_1);
 }
 
+// Converts Thrust (N) to a cmd from -1 to +1. For BA2310-1220Kv motor with HQ 6x3.5x3 prop. RFC JV
+float AC_AttitudeControl_Multi::thrust_model_ba2310hq6x35x3(float thrust_body)
+{   // TODO JV: Compensate for voltage. 
+    float thrust_sign = 1.0f;
+    float max_cmd = 0.605f;           // Maximum command for BA2310-1220Kv with ESC VGood 60A (This limits the power at ~300 W)
+    float min_cmd = 0.06f;            // Minimum command for BA2310-1220Kv with ESC VGood 60A (PWM: 1050 microsec)
+    float thrust_max = 10.002f;       // Max thrust (N). 
+    float thrust_min = 0.368f;        // Min thrust when spinning (N).
+    float cmd_0_to_1 = 0.0f;          // Initialization
+    float coeff_b = -0.693;           // Linear approximation coefficient
+    float coeff_a = (thrust_max - thrust_min)/(max_cmd - min_cmd);      // Linear approximation coefficient
+
+    if ((thrust_body < thrust_min ) && (thrust_body > -thrust_min)) {
+        return cmd_0_to_1;
+
+    } else if (thrust_body < 0.0f) {
+        thrust_sign = -1.0f;
+
+    } else if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
+        return (max_cmd * thrust_sign);
+
+    }
+
+    cmd_0_to_1 = (thrust_sign * thrust_body - coeff_b) / coeff_a;         // Linear approximation of thrust to 0_to_1 (Normalization of PWM)
+
+    return (thrust_sign * cmd_0_to_1);
+}
+
+// Converts Thrust (N) to a cmd from -1 to +1. For Tmotor F1507-2700 Kv & GemFan3028. RFC JV
+float AC_AttitudeControl_Multi::thrust_model_f1507gf3028(float thrust_body)
+{ // TODO JV: Compensate for voltage. 
+    float thrust_sign = 1.0f;
+    float max_cmd = 0.565f;          // Upper command limit (3.00 N)
+    // float min_cmd = 0.192f;          // Upper command limit (0.1 N)
+    float cmd_0_to_1 = 0.0f;         // Initialization
+    float thrust_max = 3.00f;        // Upper thrust limit (N). For the longitudinal props, it means that they will saturate at an angular position error of 9.46 ° if the desired side thrust is 18 N.
+    float thrust_min = 0.100f;       // Lower thrust limit when spinning (N).
+    float coeff_x2 = 12.6227f;       // Quadratic approximation coefficient
+    float coeff_x1 = -1.7838f;       // Quadratic approximation coefficient
+    float coeff_x0 = -0.02362f;      // Quadratic approximation coefficient
+
+    if ((thrust_body < thrust_min ) && (thrust_body > -thrust_min)) {
+        return cmd_0_to_1;
+
+    } else if (thrust_body < 0.0f) {
+        thrust_sign = -1.0f;
+
+    } else if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
+        return (max_cmd * thrust_sign);
+
+    }
+
+    cmd_0_to_1 = (-coeff_x1 + safe_sqrt(coeff_x1 * coeff_x1 - 4.0f * coeff_x2 * (coeff_x0 - thrust_sign * thrust_body))) / (2.0f * coeff_x2);
+
+    return (thrust_sign * cmd_0_to_1);
+} 
+
 // Sets motor commands based on velocity target (latitude/longitude) from pilot. RFC JV , Ayaw JV
 void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, Vector3f dist_vec_tar_ned, bool enabled_auto_yaw, float yaw_pilot)
-{   // TODO JV: Delete the saturations since the conversion model thrust to (-1 to +1) already does it. Implement a low-pass filter (for derivative of error?.
+{   // TODO JV: Adapt the idle parameter to only affect yaw and longitudinal props. Implement a low-pass filter for derivative of error?. Move thrust models function with the motor mixing (Having the thrust model here isn't ideal since it assumes that we already know the motor/prop config).
 
     // Variable initialization
     Vector3f vel_inertial; //_inav->get_velocity();    // Velocity in inertial frame (NED). Latitude, Longitude, Vertical down  (m/s)
     float cmd_vel_latitude = 0.0f;           // latitude command
     float cmd_vel_longitude = 0.0f;          // longitude command
-    float cmd_lateral;                       // Lateral command
-    float cmd_forward;                       // Forward command
+    float cmd_lateral = 0.0f;                       // Lateral command
+    float cmd_forward = 0.0f;                       // Forward command
     const Matrix3f &rot_body_to_NED = _ahrs.get_rotation_body_to_ned();               // Rotation matrix from body frame to NED
     Vector3f cmd_body;                  // Commands from North-East-0 to body frame (lateral/forward/yaw)
     Vector2f home_xy;                   // Position NE from home (m)
@@ -566,8 +623,9 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     float cmd_yaw = 0.0f;                                         // yaw command
     Vector2f u_d_to_p;                                            // Position unit vector from aircraft (drone) to PCS 
     float ang_N_u_d_to_p = 0.0f;                                  // Angle in between the North unit vector and u_drone_to_pcs unit vector (rad)
-    float yaw_offset = radians(_ayaw_off);                            // Yaw offset in orientation following (rad) 
+    float yaw_offset = radians(_ayaw_off);                        // Yaw offset in orientation following (rad) 
     float yaw_dir = 0.0f;                                         // Yaw rotation desired direction in regard to the XYZ body reference frame
+    float yaw_thrust = 0.0f;                                      // Resultant desired yaw thrust in the XYZ body reference frame (antagonist configuration). (N) 
     Vector3f heading_body;                                        // Yaw heading vector considering the yaw offset parameter in the body reference frame
     heading_body.x = cosf(yaw_offset); heading_body.y = sinf(yaw_offset); heading_body.z = 0.0f;
     heading_body = rot_body_to_NED * heading_body;
@@ -597,7 +655,7 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
             cmd_pos.x = -_rfc_pos_kp * home_xy.x;           // Position target is the home position (0,0)
             cmd_pos.y = -_rfc_pos_kp * home_xy.y;           // Position target is the home position (0,0)
 
-            if ((dist_vec_tar_ned.x != 0.0f) && (dist_vec_tar_ned.y != 0.0f)) {
+            if (((dist_vec_tar_ned.x > 0.01f) || (dist_vec_tar_ned.x < -0.01f)) && ((dist_vec_tar_ned.y > 0.01f) || (dist_vec_tar_ned.y < -0.01f))) {
                 // We are only interested by the horizontal orientation of drone to PCS vector.
                 u_d_to_p.x = (home_xy.x - dist_vec_tar_ned.x) / safe_sqrt( (home_xy.x - dist_vec_tar_ned.x) * (home_xy.x - dist_vec_tar_ned.x) + (home_xy.y - dist_vec_tar_ned.y) * (home_xy.y - dist_vec_tar_ned.y) );
                 u_d_to_p.y = (home_xy.y - dist_vec_tar_ned.y) / safe_sqrt( (home_xy.x - dist_vec_tar_ned.x) * (home_xy.x - dist_vec_tar_ned.x) + (home_xy.y - dist_vec_tar_ned.y) * (home_xy.y - dist_vec_tar_ned.y) );
@@ -657,7 +715,7 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         cmd_body.z = 0.0f;                                      // (Down)
         cmd_body = rot_body_to_NED.mul_transpose(cmd_body);     // NED -> XYZ (forward/right/down) (Newtons)
 
-        // Compensation for the inclination of the PCS
+        // Compensation for the inclination of the PCS. Note that these compensations don't account for the fact that the ideal side thrust (to be centered) reduces/augmentes if the PCS is inclined (vertical component of thrust). 
         vect_k_x = Vector3f(1.0f, 0.0f, 0.0f);
         vect_k_x = rot_body_to_NED * vect_k_x;            // Rotation from XYZ to NED referential (Vp vector)
         vect_x_NED =  Vector3f(vect_k_x.x, vect_k_x.y, 0.0f);         // 2D Vector with the same orientation of Vp (Vi vector)
@@ -677,52 +735,49 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         cmd_body.y *= 1.0f / k_y;
 
         if (_idle_on) {                 // Idle thrust setting (N). Idle JV
-            cmd_idle = thrust_model_ba2310apc7x5(_idle_thrust);
-        }
+            cmd_idle = thrust_model_f1507gf3028(_idle_thrust);
 
-        // conversion from thrust (N) in body frame to -1 to +1 range
-        cmd_lateral = thrust_model_ba2310apc7x5(cmd_body.y);
-        cmd_forward = thrust_model_ba2310apc7x5(cmd_body.x);
-
-        /* Don't think I need it yet JV // This is meant to limit the net thrust by the PCS above the limit of a single thruster (7.45 N)
-        if ((cmd_lateral * cmd_lateral + cmd_forward * cmd_forward) > 1.0f) {
-            cmd_lateral *= 1.0f / safe_sqrt(cmd_lateral * cmd_lateral + cmd_forward * cmd_forward);
-            cmd_forward *= 1.0f / safe_sqrt(cmd_lateral * cmd_lateral + cmd_forward * cmd_forward);
-        } */       
-
-        if (cmd_lateral > 1.0f) {
-            cmd_lateral = 1.0f;
-        } else if (cmd_lateral < -1.0f) {
-            cmd_lateral = -1.0f;
+            if (cmd_body.x > 0.0f) {                                                       // This compensates for the idling thrust.
+                cmd_forward = thrust_model_f1507gf3028(cmd_body.x + _idle_thrust);          // Longitudinal props  
+            } else if (cmd_body.x < 0.0f) {
+                cmd_forward = thrust_model_f1507gf3028(cmd_body.x - _idle_thrust);          // Longitudinal props  
+            }
+        } else {
+            cmd_forward = thrust_model_f1507gf3028(cmd_body.x);
         }
         
-        if (cmd_forward > 1.0f) {
-            cmd_forward = 1.0f;
-        } else if (cmd_forward < -1.0f) {
-            cmd_forward = -1.0f;
-        }
+
+        // conversion from thrust (N) in body frame to a -1 to +1 range
+        cmd_lateral = thrust_model_ba2310hq6x35x3(cmd_body.y / 2.0f);       // We divide by 2 because we have 2 main props acting in the same direction. Motor mixing will naturally remultiply by 2.
+          
 
     } else {
         cmd_lateral = 0.0f;
         cmd_forward = 0.0f;
     }
 
+    // A positive value should cause positive angular velocity in yaw. Viewed from the top, the PCS should turn clockwise.
     if (enabled_auto_yaw && ((angular_speed_z * angular_speed_z) <= 625.0f )) {         // Second condition is a safety if angular speed in yaw exceeds 25 rad/s
-        cmd_yaw = cmd_der_yaw + cmd_pos_yaw + cmd_plt_yaw;            // PD controller on angular position relative to aircraft + pilot command (-1 to +1)
+        yaw_thrust = cmd_der_yaw + cmd_pos_yaw + cmd_plt_yaw;                           // PD controller on angular position relative to aircraft + pilot command (N)
+        
+        if (_idle_on) {
+            if (yaw_thrust > 0.0f) {                                                       // This compensates for the idling thrust.
+                cmd_yaw = thrust_model_f1507gf3028(yaw_thrust + _idle_thrust);
+            } else if (yaw_thrust < 0.0f) {
+                cmd_yaw = thrust_model_f1507gf3028(yaw_thrust - _idle_thrust);
+            }
+        } else {
+            cmd_yaw = thrust_model_f1507gf3028(yaw_thrust);
+        }  
+        
     } else {
         cmd_yaw = 0.0f;
-    }
-    
-    if (cmd_yaw > 1.0f) {
-            cmd_yaw = 1.0f;
-    } else if (cmd_yaw < -1.0f) {
-        cmd_yaw = -1.0f;
     }
 
     // Logging JV
     _pcscmd.pcs_tar_lat = cmd_lateral;
-    _pcscmd.pcs_tar_fwd = cmd_forward;
-    _pcscmd.pcs_tar_yaw = cmd_yaw;
+    _pcscmd.pcs_tar_fwd = cmd_forward;                          // Note that this recorded value is: 01range(desired thrust + idle thrust)
+    _pcscmd.pcs_tar_yaw = cmd_yaw;                              // Note that this recorded value is: 01range(desired thrust + idle thrust)
     _pcscmd.pcs_pos_lat = cmd_pos.x;
     _pcscmd.pcs_pos_lon = cmd_pos.y;
     _pcscmd.pcs_vel_lat = cmd_vel_latitude;
