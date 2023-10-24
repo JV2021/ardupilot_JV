@@ -462,16 +462,26 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
 
             break;
 
+        case AUX_FUNC::USER_FUNC2:          
+            // Cswitch JV
+            if (ch_flag == AuxSwitchPos::HIGH) {
+                copter.set_control_pwm_in(1900);
+            } else {
+                copter.set_control_pwm_in(1100);
+            }
+
+            break;
+
 #ifdef USERHOOK_AUXSWITCH
         /* case AUX_FUNC::USER_FUNC1: // Comment out to avoid potential building errores. Homeset JV
 
             copter.userhook_auxSwitch1(ch_flag);
             break;
         */
-        case AUX_FUNC::USER_FUNC2:
+        /* case AUX_FUNC::USER_FUNC2: // Comment out to avoid potential building errores. Cswitch JV
             copter.userhook_auxSwitch2(ch_flag);
             break;
-
+        */
         case AUX_FUNC::USER_FUNC3:
             copter.userhook_auxSwitch3(ch_flag);
             break;

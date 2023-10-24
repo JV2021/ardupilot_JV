@@ -2,6 +2,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h> // Added this to debug JV
+#include <AP_BattMonitor/AP_BattMonitor.h>      // Batt JV
 
 // table of user settable parameters
 const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
@@ -562,6 +563,43 @@ float AC_AttitudeControl_Multi::thrust_model_ba2310hq6x35x3(float thrust_body)
     return (thrust_sign * cmd_0_to_1);
 }
 
+// Converts Thrust (N) to a cmd from -1 to +1. For BA2310-1220Kv motor with HQ 6x3.5x3 prop. Batt JV
+float AC_AttitudeControl_Multi::thrust_model_ba2310hq6x35x3_volt(float thrust_body, float batt_volt)
+{   // TODO JV: Compensate the voltage drop when dragging current in the 25 and 21 V models. 
+    float thrust_sign = 1.0f;
+    float thrust_max = 9.0f;            // Upper thrust limit (N). 
+    float thrust_min = 0.3f;            // Lower thrust limit (N).
+    float cmd_0_to_1 = 0.0f;            // Initialization (linear interpolation)
+    float cmd_0_to_1_25V = 0.0f;        // Initialization for 25 V model
+    float cmd_0_to_1_21V = 0.0f;        // Initialization for 21 V model
+    float coeff_25V_x2 = 13.7481f;      // 25 V quadratic function coefficient of x2
+    float coeff_25V_x1 = 12.0977f;      // 25 V quadratic function coefficient of x1
+    float coeff_25V_x0 = -0.288102f;    // 25 V quadratic function coefficient of x0
+    float coeff_21V_x2 = 6.32533f;      // 21 V quadratic function coefficient of x2
+    float coeff_21V_x1 = 10.3053f;      // 21 V quadratic function coefficient of x1
+    float coeff_21V_x0 = -0.316388f;    // 21 V quadratic function coefficient of x0
+    float lin_x_25V = 25.0f;           // Resting voltage of quadratic model at 25 V (V) 
+    float lin_x_21V = 21.0f;           // Resting voltage of quadratic model at 21 V (V) 
+
+    if ((thrust_body < thrust_min ) && (thrust_body > -thrust_min)) {
+        return cmd_0_to_1;
+
+    } else if (thrust_body < 0.0f) {
+        thrust_sign = -1.0f;
+
+    } else if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
+        thrust_body = thrust_max * thrust_sign;
+
+    }
+
+    cmd_0_to_1_25V = (-coeff_25V_x1 + safe_sqrt(coeff_25V_x1 * coeff_25V_x1 - 4.0f * coeff_25V_x2 * (coeff_25V_x0 - thrust_sign * thrust_body))) / (2.0f * coeff_25V_x2);
+    cmd_0_to_1_21V = (-coeff_21V_x1 + safe_sqrt(coeff_21V_x1 * coeff_21V_x1 - 4.0f * coeff_21V_x2 * (coeff_21V_x0 - thrust_sign * thrust_body))) / (2.0f * coeff_21V_x2);
+
+    cmd_0_to_1 = cmd_0_to_1_25V + (batt_volt - lin_x_25V) * (cmd_0_to_1_21V - cmd_0_to_1_25V) / (lin_x_21V - lin_x_25V);
+
+    return (thrust_sign * cmd_0_to_1);
+}
+
 // Converts Thrust (N) to a cmd from -1 to +1. For Tmotor F1507-2700 Kv & GemFan3028. RFC JV
 float AC_AttitudeControl_Multi::thrust_model_f1507gf3028(float thrust_body)
 { // TODO JV: Compensate for voltage. 
@@ -590,6 +628,43 @@ float AC_AttitudeControl_Multi::thrust_model_f1507gf3028(float thrust_body)
 
     return (thrust_sign * cmd_0_to_1);
 } 
+
+// Converts Thrust (N) to a cmd from -1 to +1. For Tmotor F1507-2700 Kv & GemFan3028. Batt JV
+float AC_AttitudeControl_Multi::thrust_model_f1507gf3028_volt(float thrust_body, float batt_volt)
+{   // TODO JV: Compensate the voltage drop when dragging current in the 25 and 21 V models. 
+    float thrust_sign = 1.0f;
+    float thrust_max = 3.0f;            // Upper thrust limit (N). 
+    float thrust_min = 0.1f;            // Lower thrust limit (N).
+    float cmd_0_to_1 = 0.0f;            // Initialization (linear interpolation)
+    float cmd_0_to_1_25V = 0.0f;        // Initialization for 25 V model
+    float cmd_0_to_1_21V = 0.0f;        // Initialization for 21 V model
+    float coeff_25V_x2 = 14.4297f;      // 25 V quadratic function coefficient of x2
+    float coeff_25V_x1 = -2.73745f;      // 25 V quadratic function coefficient of x1
+    float coeff_25V_x0 = 0.0722041f;    // 25 V quadratic function coefficient of x0
+    float coeff_21V_x2 = 10.7383f;      // 21 V quadratic function coefficient of x2
+    float coeff_21V_x1 = -2.11023f;      // 21 V quadratic function coefficient of x1
+    float coeff_21V_x0 = 0.0582782f;    // 21 V quadratic function coefficient of x0
+    float lin_x_25V = 25.0f;           // Resting voltage of quadratic model at 25 V (V) 
+    float lin_x_21V = 21.0f;           // Resting voltage of quadratic model at 21 V (V) 
+
+    if ((thrust_body < thrust_min ) && (thrust_body > -thrust_min)) {
+        return cmd_0_to_1;
+
+    } else if (thrust_body < 0.0f) {
+        thrust_sign = -1.0f;
+
+    } else if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
+        thrust_body = thrust_max * thrust_sign;
+
+    }
+
+    cmd_0_to_1_25V = (-coeff_25V_x1 + safe_sqrt(coeff_25V_x1 * coeff_25V_x1 - 4.0f * coeff_25V_x2 * (coeff_25V_x0 - thrust_sign * thrust_body))) / (2.0f * coeff_25V_x2);
+    cmd_0_to_1_21V = (-coeff_21V_x1 + safe_sqrt(coeff_21V_x1 * coeff_21V_x1 - 4.0f * coeff_21V_x2 * (coeff_21V_x0 - thrust_sign * thrust_body))) / (2.0f * coeff_21V_x2);
+
+    cmd_0_to_1 = cmd_0_to_1_25V + (batt_volt - lin_x_25V) * (cmd_0_to_1_21V - cmd_0_to_1_25V) / (lin_x_21V - lin_x_25V);
+
+    return (thrust_sign * cmd_0_to_1);
+}
 
 // Sets motor commands based on velocity target (latitude/longitude) from pilot. RFC JV , Ayaw JV
 void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, Vector3f dist_vec_tar_ned, bool enabled_auto_yaw, float yaw_pilot)
@@ -634,6 +709,24 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
     heading_ned.y = heading_ned.y / safe_sqrt(heading_ned.x * heading_ned.x + heading_ned.y * heading_ned.y + heading_ned.z * heading_ned.z);
     const float dt = AP::scheduler().get_loop_period_s();         // Period of the loop (s)
     static bool reset_yaw_ctrl = true;                                          // Boolean to reset derivative related terms of the yaw controller    
+
+    // Voltage compensation related variables Batt JV
+    AP_BattMonitor &battery = AP::battery();
+    const uint8_t batt_idx = 0;   
+    _voltage = battery.voltage(batt_idx);                         // Raw analog voltage reading of the first battery monitor (V)
+
+    if (_voltage < 20.0f) {             // These are under load voltage limits (V) to avoid a linear interpolation far from the tested boundaries.
+        _voltage = 20.0f;               // At 21 V resting voltage and while dragging 13 A, the voltage dropped to 20.26 V (Voltage vs Current: linear correlation).
+    } else if (_voltage > 25.0f) {
+        _voltage = 25.0f;               // A 6S battery won't exceed 25 V under load.
+    }
+
+    static uint16_t counter = 0;         // Debug JV
+    counter++;
+    if (counter > 1200) {
+        counter = 0;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "BATT_VOLT= %5.3f", (float)_voltage);
+    }
 
     if (enabled_auto_yaw && ((angular_speed_z * angular_speed_z) <= 625.0f )) {         // Second condition is a safety if angular speed in yaw exceeds 25 rad/s
         cmd_plt_yaw = _ayaw_plt * yaw_pilot;     // Proportional gain on pilot command
@@ -735,20 +828,20 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         cmd_body.y *= 1.0f / k_y;
 
         if (_idle_on) {                 // Idle thrust setting (N). Idle JV
-            cmd_idle = thrust_model_f1507gf3028(_idle_thrust);
+            cmd_idle = thrust_model_f1507gf3028_volt(_idle_thrust, _voltage);
 
             if (cmd_body.x > 0.0f) {                                                       // This compensates for the idling thrust.
-                cmd_forward = thrust_model_f1507gf3028(cmd_body.x + _idle_thrust);          // Longitudinal props  
+                cmd_forward = thrust_model_f1507gf3028_volt(cmd_body.x + _idle_thrust, _voltage);          // Longitudinal props  
             } else if (cmd_body.x < 0.0f) {
-                cmd_forward = thrust_model_f1507gf3028(cmd_body.x - _idle_thrust);          // Longitudinal props  
+                cmd_forward = thrust_model_f1507gf3028_volt(cmd_body.x - _idle_thrust, _voltage);          // Longitudinal props  
             }
         } else {
-            cmd_forward = thrust_model_f1507gf3028(cmd_body.x);
+            cmd_forward = thrust_model_f1507gf3028_volt(cmd_body.x, _voltage);
         }
         
 
         // conversion from thrust (N) in body frame to a -1 to +1 range
-        cmd_lateral = thrust_model_ba2310hq6x35x3(cmd_body.y / 2.0f);       // We divide by 2 because we have 2 main props acting in the same direction. Motor mixing will naturally remultiply by 2.
+        cmd_lateral = thrust_model_ba2310hq6x35x3_volt(cmd_body.y / 2.0f, _voltage);       // We divide by 2 because we have 2 main props acting in the same direction. Motor mixing will naturally remultiply by 2.
           
 
     } else {
@@ -762,12 +855,12 @@ void AC_AttitudeControl_Multi::pcs_rf_controller(bool enabled_rfc, float plt_lat
         
         if (_idle_on) {
             if (yaw_thrust > 0.0f) {                                                       // This compensates for the idling thrust.
-                cmd_yaw = thrust_model_f1507gf3028(yaw_thrust + _idle_thrust);
+                cmd_yaw = thrust_model_f1507gf3028_volt(yaw_thrust + _idle_thrust, _voltage);
             } else if (yaw_thrust < 0.0f) {
-                cmd_yaw = thrust_model_f1507gf3028(yaw_thrust - _idle_thrust);
+                cmd_yaw = thrust_model_f1507gf3028_volt(yaw_thrust - _idle_thrust, _voltage);
             }
         } else {
-            cmd_yaw = thrust_model_f1507gf3028(yaw_thrust);
+            cmd_yaw = thrust_model_f1507gf3028_volt(yaw_thrust, _voltage);
         }  
         
     } else {

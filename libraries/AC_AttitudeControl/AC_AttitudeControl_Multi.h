@@ -93,8 +93,14 @@ public:
     // Converts thrust (N) in body frame to a motor command BA2310-1220Kv & HQ6x3.5x3 (-1 to +1). RFC JV
     float thrust_model_ba2310hq6x35x3(float thrust_body);
 
+    // Converts thrust (N) in body frame to a motor command BA2310-1220Kv & HQ6x3.5x3 (-1 to +1) with voltage compensation. Batt JV
+    float thrust_model_ba2310hq6x35x3_volt(float thrust_body, float batt_volt);
+
     // Converts thrust (N) in body frame to a motor command Tmotor F1507-2700Kv & GemFan3028 (-1 to +1). RFC JV
     float thrust_model_f1507gf3028(float thrust_body);
+
+    // Converts thrust (N) in body frame to a motor command Tmotor F1507-2700Kv & GemFan3028 (-1 to +1) with voltage compensation. Batt JV
+    float thrust_model_f1507gf3028_volt(float thrust_body, float batt_volt);
 
     // Rotating force controller + Yaw heading following. RFC JV , Ayaw JV
     void pcs_rf_controller(bool enabled_rfc, float plt_latitude, float plt_longitude, Vector3f dist_vec_tar_ned, bool enabled_auto_yaw, float yaw_pilot);
@@ -141,6 +147,7 @@ protected:
     // PCS global variables
     // float                 _dt;              // timestep in seconds
     float                 _error;           // Angular position error value during previous loop
+    float                 _voltage;         // Battery voltage (V) Batt JV
     // float                 _derivative;      // derivative value
 
 };

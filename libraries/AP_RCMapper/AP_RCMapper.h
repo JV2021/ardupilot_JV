@@ -42,6 +42,9 @@ public:
     /// Homeset JV - return input channel number for homeset input
     uint8_t homeset() const { return _ch_hset; }
 
+    /// Cswitch JV - return input channel number for ctrlswitch input
+    uint8_t ctrlswitch() const { return _ch_cswitch; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 private:
@@ -54,6 +57,7 @@ private:
     AP_Int8 _ch_lateral;
     AP_Int8 _ch_ksw;            // Killswitch JV
     AP_Int8 _ch_hset;           // Homeset JV
+    AP_Int8 _ch_cswitch;        // Cswitch JV
     static RCMapper *_singleton;
 };
 

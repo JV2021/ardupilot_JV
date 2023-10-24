@@ -24,8 +24,9 @@ Mode::Mode(void) :
     channel_yaw(copter.channel_yaw),
     G_Dt(copter.G_Dt),
     channel_killswitch(copter.channel_killswitch),
-    channel_homeset(copter.channel_homeset)
-{ };            // Killswitch JV    // Homeset JV
+    channel_homeset(copter.channel_homeset),
+    channel_ctrlswitch(copter.channel_ctrlswitch)
+{ };            // Killswitch JV    // Homeset JV   // Cswitch JV
 
 // return the static controller object corresponding to supplied mode
 Mode *Copter::mode_from_mode_num(const Mode::Number mode)
@@ -485,7 +486,7 @@ Vector2f Mode::get_pilot_desired_velocity(float vel_max) const
 
 // Killswitch JV
 bool Mode::pcs_killswitch()
-{   // TODO JV: revise the >= 1200 criteria because a high position of the switch will arm the PCS not disarm it
+{   // TODO JV: channel_killswitch is never set (no detection of the RC switch state, see RC_Channel.cpp). It isn't useful and should be removed.
     float killswitch;
     killswitch = channel_killswitch->get_control_in();
     uint32_t last_valid_rc_msg = copter.get_last_msg_rc();       // Gets the last valid rc msg time
@@ -514,7 +515,7 @@ bool Mode::pcs_homeset()
     static bool home_was_set = false;       // Boolean to avoid to engage rfc if home hasn't been previously set
 
     if (homeset > 1200 && !flip ) {
-        home_was_set = copter.set_home_to_current_location( false );           // Not sure if it should be true or false JV
+        home_was_set = copter.set_home_to_current_location( false );
         flip = true;
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Home has been manually reset");
         AP::logger().Write_Message("Home has been manually reset");
@@ -525,6 +526,28 @@ bool Mode::pcs_homeset()
 
     }
     return home_was_set;
+}
+
+// PCS Cswitch JV
+bool Mode::pcs_ctrlswitch()
+{
+    int16_t cswitch;
+    cswitch = copter.get_control_pwm_in();
+    static bool flip =  false;         // Detection of a flip of the switch 
+
+    if (cswitch > 1200 && !flip ) {
+        flip = true;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "CSW is ON = %d", (int)cswitch);
+        AP::logger().Write_Message("CSW is ON");        
+        return flip;
+
+    } else if ( cswitch <= 1200 && flip) {
+        flip = false;
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "CSW is OFF = %d", (int)cswitch);
+        AP::logger().Write_Message("CSW is OFF");
+
+    }
+    return flip;
 }
 
 bool Mode::_TakeOff::triggered(const float target_climb_rate) const

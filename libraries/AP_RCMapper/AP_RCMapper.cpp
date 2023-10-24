@@ -74,8 +74,17 @@ const AP_Param::GroupInfo RCMapper::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("HSET",         7, RCMapper, _ch_hset, 9),
 
+    // @Param: CSW
+    // @DisplayName: Controller switch channel
+    // @Description: Controller switch channel number. This is useful when you have a RC transmitter that can't change the channel order easily. Reboot is required for changes to take effect.
+    // @Range: 1 12
+    // @Increment: 1
+    // @User: Advanced
+    // @RebootRequired: True
+    AP_GROUPINFO("CSW",         8, RCMapper, _ch_cswitch, 10),
+
     AP_GROUPEND
-};          // Killswitch JV    // Homeset JV
+};          // Killswitch JV    // Homeset JV   // Cswitch JV
 
 // singleton instance
 RCMapper *RCMapper::_singleton;

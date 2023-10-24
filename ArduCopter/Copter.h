@@ -224,6 +224,9 @@ public:
     // Killswitch JV
     uint32_t get_last_msg_rc() {return last_radio_update_ms; }
 
+    int16_t  get_control_pwm_in() const { return m_ctrlswitch;}          // Cswitch
+    void     set_control_pwm_in(int16_t pwm_value) { m_ctrlswitch = pwm_value;}
+
 private:
 
     // key aircraft parameters passed to multiple libraries
@@ -243,6 +246,9 @@ private:
     RC_Channel *channel_yaw;
     RC_Channel *channel_killswitch;         // Killswitch JV
     RC_Channel *channel_homeset;            // Homeset JV
+    RC_Channel *channel_ctrlswitch;         // Cswitch JV
+
+    int16_t m_ctrlswitch;                   // Cswitch
 
     AP_Logger logger;
 
