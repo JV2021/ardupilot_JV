@@ -647,7 +647,7 @@ float AC_AttitudeControl_Multi::thrust_model_f1507gf3028(float thrust_body)
 float AC_AttitudeControl_Multi::thrust_model_f1507gf3028_volt(float thrust_body, float batt_volt)
 {   // TODO JV: Compensate the voltage drop when dragging current in the 25 and 21 V models. 
     float thrust_sign = 1.0f;
-    float thrust_max = 3.0f;            // Upper thrust limit (N). 
+    float thrust_max = 3.6f;            // Upper thrust limit (N). 
     float thrust_min = 0.1f;            // Lower thrust limit (N).
     float cmd_0_to_1 = 0.0f;            // Initialization (linear interpolation)
     float cmd_0_to_1_25V = 0.0f;        // Initialization for 25 V model
