@@ -429,11 +429,15 @@ void AC_AttitudeControl_Multi::pcs_manual_bypass(float lateral_temp, float forwa
     float target_forward = forward_temp;
     float target_yaw_rate = yaw_rate_temp;
 
-    if ((target_lateral < -1.000f) || (target_lateral > 1.000f)){
+    if ((target_lateral < -1.000f) || (target_lateral > 1.000f)) {
         target_lateral = 0.0f;
-    } else if ((target_forward < -1.000f) || (target_forward > 1.000f)){
+    } 
+    
+    if ((target_forward < -1.000f) || (target_forward > 1.000f)) {
         target_forward = 0.0f;
-    } else if ((target_yaw_rate < -1.000f) || (target_yaw_rate > 1.000f)){
+    }
+    
+    if ((target_yaw_rate < -1.000f) || (target_yaw_rate > 1.000f)) {
         target_yaw_rate = 0.0f;
     }
 
@@ -497,7 +501,9 @@ float AC_AttitudeControl_Multi::thrust_model_br2212(float thrust_body)
     } else if (thrust_body < 0.0f) {
         thrust_sign = -1.0f;
 
-    } else if ((thrust_body <= -7.45f ) || (thrust_body >= 7.45f)) {
+    } 
+    
+    if ((thrust_body <= -7.45f ) || (thrust_body >= 7.45f)) {
         return (max_cmd * thrust_sign);
 
     }
@@ -525,7 +531,9 @@ float AC_AttitudeControl_Multi::thrust_model_ba2310apc7x5(float thrust_body)
     } else if (thrust_body < 0.0f) {
         thrust_sign = -1.0f;
 
-    } else if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
+    }
+    
+    if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
         return (max_cmd * thrust_sign);
 
     }
@@ -553,7 +561,9 @@ float AC_AttitudeControl_Multi::thrust_model_ba2310hq6x35x3(float thrust_body)
     } else if (thrust_body < 0.0f) {
         thrust_sign = -1.0f;
 
-    } else if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
+    }
+    
+    if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
         return (max_cmd * thrust_sign);
 
     }
@@ -587,7 +597,9 @@ float AC_AttitudeControl_Multi::thrust_model_ba2310hq6x35x3_volt(float thrust_bo
     } else if (thrust_body < 0.0f) {
         thrust_sign = -1.0f;
 
-    } else if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
+    }
+    
+    if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
         thrust_body = thrust_max * thrust_sign;
 
     }
@@ -619,7 +631,9 @@ float AC_AttitudeControl_Multi::thrust_model_f1507gf3028(float thrust_body)
     } else if (thrust_body < 0.0f) {
         thrust_sign = -1.0f;
 
-    } else if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
+    }
+    
+    if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
         return (max_cmd * thrust_sign);
 
     }
@@ -653,7 +667,9 @@ float AC_AttitudeControl_Multi::thrust_model_f1507gf3028_volt(float thrust_body,
     } else if (thrust_body < 0.0f) {
         thrust_sign = -1.0f;
 
-    } else if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
+    }
+    
+    if ((thrust_body <= -thrust_max ) || (thrust_body >= thrust_max)) {
         thrust_body = thrust_max * thrust_sign;
 
     }
